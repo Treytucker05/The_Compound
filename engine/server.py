@@ -130,6 +130,23 @@ Required output:
 5. Cut for v1
 """
 
+PINNED_VAULT_NOTES = (
+    "03_SHARED/OPERATIONAL_BOARD.md",
+    "03_SHARED/PROJECT_MAP.md",
+    "03_SHARED/PORTAL_MISSIONS.md",
+)
+
+VAULT_GROUP_ORDER = {
+    "Shared": 0,
+    "Daily": 1,
+    "Projects": 2,
+    "Personal": 3,
+    "System": 4,
+    "Logs": 5,
+    "Archive": 6,
+    "Other": 7,
+}
+
 
 def require_world() -> World:
     if world is None:
@@ -552,6 +569,80 @@ def build_pulse_payload() -> dict:
     }
 
 
+def format_file_size(size: int) -> str:
+    if size < 1024:
+        return f"{size} B"
+    if size < 1024 * 1024:
+        return f"{size / 1024:.1f} KB"
+    return f"{size / (1024 * 1024):.1f} MB"
+
+
+def vault_note_title(relative_path: str) -> str:
+    stem = Path(relative_path).stem
+    words = stem.replace("_", " ").replace("-", " ").split()
+    return " ".join(word.capitalize() for word in words) or relative_path
+
+
+def vault_note_group(relative_path: str) -> str:
+    parts = relative_path.split("/")
+    first = parts[0].upper() if parts else ""
+    rel_upper = relative_path.upper()
+    if first == "03_SHARED":
+        return "Shared"
+    if first in ("00_DAILY", "DAILY"):
+        return "Daily"
+    if first in ("01_PROJECTS", "PROJECTS") or "PROJECT" in rel_upper:
+        return "Projects"
+    if first in ("01_JOSEPH", "02_TREY", "PERSONAL", "PEOPLE"):
+        return "Personal"
+    if first in ("04_SYSTEM", "SYSTEM"):
+        return "System"
+    if first in ("06_LOGS", "LOGS") or "LOG" in rel_upper:
+        return "Logs"
+    if first in ("99_ARCHIVE", "ARCHIVE"):
+        return "Archive"
+    return "Other"
+
+
+def vault_pin_rank(relative_path: str) -> int:
+    try:
+        return PINNED_VAULT_NOTES.index(relative_path)
+    except ValueError:
+        return len(PINNED_VAULT_NOTES)
+
+
+def vault_file_metadata(path: Path) -> dict:
+    rel = path.relative_to(VAULT_DIR).as_posix()
+    folder = rel.rsplit("/", 1)[0] if "/" in rel else ""
+    try:
+        stat = path.stat()
+        updated = datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc).isoformat()
+        size = stat.st_size
+    except OSError:
+        updated = ""
+        size = 0
+    group = vault_note_group(rel)
+    return {
+        "path": rel,
+        "title": vault_note_title(rel),
+        "folder": folder,
+        "group": group,
+        "pinned": rel in PINNED_VAULT_NOTES,
+        "size": size,
+        "size_label": format_file_size(size),
+        "updated_at": updated,
+    }
+
+
+def vault_index_sort_key(item: dict) -> tuple:
+    return (
+        0 if item.get("pinned") else 1,
+        vault_pin_rank(item.get("path", "")),
+        VAULT_GROUP_ORDER.get(item.get("group", "Other"), 99),
+        item.get("path", "").lower(),
+    )
+
+
 def build_vault_index() -> list[dict]:
     if not VAULT_DIR.exists():
         return []
@@ -560,16 +651,9 @@ def build_vault_index() -> list[dict]:
     for path in sorted(VAULT_DIR.rglob("*.md"), key=lambda item: str(item).lower()):
         if ".obsidian" in path.parts:
             continue
-        rel = path.relative_to(VAULT_DIR).as_posix()
-        try:
-            stat = path.stat()
-            updated = datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc).isoformat()
-            size = stat.st_size
-        except OSError:
-            updated = ""
-            size = 0
-        files.append({"path": rel, "size": size, "updated_at": updated})
+        files.append(vault_file_metadata(path))
 
+    files.sort(key=vault_index_sort_key)
     return files[:400]
 
 
@@ -596,10 +680,9 @@ def read_vault_markdown(relative_path: str) -> tuple[int, dict]:
     except Exception as exc:
         return 500, {"error": f"Could not read file: {exc}"}
 
-    return 200, {
-        "path": str(candidate.relative_to(vault_root).as_posix()),
-        "content": content,
-    }
+    payload = vault_file_metadata(candidate)
+    payload["content"] = content
+    return 200, payload
 
 
 def json_response(connection, status: int, payload: dict):

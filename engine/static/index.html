@@ -619,13 +619,14 @@
   }
 
   #vault-controls {
-    display: flex;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
     gap: 7px;
-    margin-bottom: 9px;
+    margin-bottom: 7px;
   }
 
   #vault-controls input {
-    flex: 1;
+    min-width: 0;
     border: 1px solid var(--line);
     border-radius: 7px;
     background: rgba(6, 15, 13, 0.9);
@@ -634,6 +635,15 @@
     font-size: 12px;
     padding: 8px 9px;
     outline: none;
+  }
+
+  #vault-copy-path {
+    white-space: nowrap;
+  }
+
+  #vault-meta {
+    min-height: 16px;
+    margin-bottom: 8px;
   }
 
   .radio-form {
@@ -854,27 +864,108 @@
   #vault-files li {
     font-size: 11px;
     line-height: 1.35;
-    padding: 9px;
     border-bottom: 1px solid rgba(32, 49, 45, 0.45);
-    cursor: pointer;
     color: var(--text-dim);
   }
 
-  #vault-files li:hover,
-  #vault-files li.active {
+  #vault-files li.vault-group-heading {
+    padding: 8px 9px 6px;
+    color: var(--accent-2);
+    background: rgba(255, 195, 91, 0.06);
+    cursor: default;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  #vault-files li.vault-note {
+    padding: 8px 9px;
+    cursor: pointer;
+  }
+
+  #vault-files li.vault-note:hover,
+  #vault-files li.vault-note.active {
     color: var(--text);
     background: rgba(57, 217, 145, 0.12);
+  }
+
+  .vault-note-title {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    min-width: 0;
+    color: var(--text-soft);
+    font-weight: 700;
+  }
+
+  .vault-note.active .vault-note-title,
+  .vault-note:hover .vault-note-title {
+    color: var(--good);
+  }
+
+  .vault-pin {
+    flex: 0 0 auto;
+    border: 1px solid rgba(255, 195, 91, 0.36);
+    border-radius: 4px;
+    color: var(--accent-2);
+    background: rgba(255, 195, 91, 0.08);
+    font-size: 9px;
+    line-height: 1;
+    padding: 3px 4px;
+  }
+
+  .vault-note-meta {
+    margin-top: 4px;
+    color: var(--text-dim);
+    font-size: 10px;
+    word-break: break-word;
   }
 
   #vault-preview {
     border: 1px solid var(--line);
     border-radius: 8px;
     background: rgba(6, 13, 12, 0.82);
-    padding: 12px;
+    padding: 0;
     overflow: auto;
     max-height: 520px;
     font-size: 12px;
     line-height: 1.55;
+  }
+
+  .vault-preview-head {
+    padding: 12px 12px 10px;
+    border-bottom: 1px solid rgba(83, 126, 116, 0.24);
+    background: rgba(11, 27, 24, 0.72);
+  }
+
+  .vault-kicker {
+    color: var(--accent-2);
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  #vault-preview .vault-preview-title {
+    color: var(--good);
+    margin: 5px 0 4px;
+    font-size: 18px;
+    line-height: 1.2;
+  }
+
+  .vault-preview-meta {
+    color: var(--text-dim);
+    font-size: 10px;
+    line-height: 1.45;
+    word-break: break-word;
+  }
+
+  .vault-preview-body {
+    padding: 12px;
   }
 
   #vault-preview h1,
@@ -894,11 +985,68 @@
     margin: 4px 0 8px 18px;
   }
 
+  #vault-preview blockquote {
+    margin: 8px 0;
+    padding: 7px 9px;
+    border-left: 3px solid var(--accent-2);
+    background: rgba(255, 195, 91, 0.06);
+    color: var(--text-soft);
+  }
+
   #vault-preview code {
     color: #ffd48a;
     background: rgba(255, 188, 82, 0.1);
     padding: 0 4px;
     border-radius: 4px;
+  }
+
+  #vault-preview pre {
+    margin: 8px 0;
+    padding: 9px;
+    border: 1px solid rgba(255, 195, 91, 0.18);
+    border-radius: 7px;
+    background: rgba(1, 6, 5, 0.66);
+    overflow: auto;
+  }
+
+  #vault-preview pre code {
+    display: block;
+    padding: 0;
+    background: transparent;
+    white-space: pre;
+  }
+
+  #vault-preview a {
+    color: #9fd7ff;
+  }
+
+  #vault-preview .task-list {
+    list-style: none;
+    margin-left: 0;
+  }
+
+  #vault-preview .task-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 7px;
+  }
+
+  .task-box {
+    flex: 0 0 auto;
+    width: 13px;
+    height: 13px;
+    border: 1px solid var(--line-strong);
+    border-radius: 3px;
+    margin-top: 3px;
+    color: var(--good);
+    font-size: 10px;
+    line-height: 11px;
+    text-align: center;
+  }
+
+  .vault-error {
+    padding: 12px;
+    color: var(--danger);
   }
 
   #directory-path {
@@ -1550,6 +1698,10 @@
       grid-template-columns: 1fr;
     }
 
+    #vault-controls {
+      grid-template-columns: 1fr;
+    }
+
     #vault-grid {
       grid-template-columns: 1fr;
     }
@@ -1752,14 +1904,16 @@
 
     <div class="tab-body" id="tab-vault">
       <div id="vault-controls">
-        <input type="text" id="vault-filter" placeholder="Filter markdown files...">
-        <button class="btn" id="vault-refresh">Refresh</button>
+        <input type="text" id="vault-filter" data-testid="vault-filter" placeholder="Filter markdown files...">
+        <button class="btn" id="vault-copy-path" data-testid="vault-copy-path" type="button" disabled>Copy Path</button>
+        <button class="btn" id="vault-refresh" type="button">Refresh</button>
       </div>
+      <div id="vault-meta" class="mono-dim" data-testid="vault-meta">Loading vault...</div>
       <div id="vault-grid">
-        <ul id="vault-files">
+        <ul id="vault-files" data-testid="vault-files">
           <li>Loading vault...</li>
         </ul>
-        <article id="vault-preview">
+        <article id="vault-preview" data-testid="vault-preview">
           <p>Select a vault note to preview it here.</p>
         </article>
       </div>
@@ -1893,7 +2047,9 @@
 
   const vaultFilterEl = document.getElementById("vault-filter");
   const vaultFilesEl = document.getElementById("vault-files");
+  const vaultMetaEl = document.getElementById("vault-meta");
   const vaultPreviewEl = document.getElementById("vault-preview");
+  const vaultCopyPathEl = document.getElementById("vault-copy-path");
 
   const focusTimeEl = document.getElementById("focus-time");
   const focusBarEl = document.getElementById("focus-bar");
@@ -1950,6 +2106,7 @@
     guidePromptTemplate: "",
     vaultFiles: [],
     activeVaultPath: "",
+    activeVaultMeta: null,
     focusEndMs: null,
     focusInterval: null,
     commandHistory: [],
@@ -1973,7 +2130,8 @@
   const ONBOARDING_KEY = "compound_portal_onboarding_v1";
   const PROFILE_KEY = "compound_profile_v1";
   const SHOW_ONBOARDING_KEY = "compound_show_onboarding_v1";
-  const HUD_STORAGE_KEYS = [ONBOARDING_KEY, PROFILE_KEY, SHOW_ONBOARDING_KEY];
+  const VAULT_LAST_PATH_KEY = "compound_vault_last_path_v1";
+  const HUD_STORAGE_KEYS = [ONBOARDING_KEY, PROFILE_KEY, SHOW_ONBOARDING_KEY, VAULT_LAST_PATH_KEY];
   const BOARD_COLUMNS = [
     { id: "raw", label: "Ideas", empty: "Capture rough thoughts here." },
     { id: "refined", label: "Plan", empty: "Shape the why, steps, and done check here." },
@@ -2995,98 +3153,286 @@
     }
   }
 
+  function formatVaultDate(value) {
+    if (!value) return "";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "";
+    return date.toLocaleDateString([], { month: "short", day: "numeric" });
+  }
+
+  function vaultSearchText(file) {
+    return [
+      file.path || "",
+      file.title || "",
+      file.folder || "",
+      file.group || ""
+    ].join(" ").toLowerCase();
+  }
+
+  function chooseInitialVaultPath() {
+    const savedPath = storageGet(VAULT_LAST_PATH_KEY, "");
+    if (savedPath && state.vaultFiles.some((file) => file.path === savedPath)) {
+      return savedPath;
+    }
+    const pinned = state.vaultFiles.find((file) => file.pinned);
+    return (pinned || state.vaultFiles[0] || {}).path || "";
+  }
+
   function renderVaultFileList() {
     const q = vaultFilterEl.value.trim().toLowerCase();
-    const filtered = state.vaultFiles.filter((file) => file.path.toLowerCase().includes(q));
+    const filtered = state.vaultFiles.filter((file) => !q || vaultSearchText(file).includes(q));
 
     if (!filtered.length) {
-      vaultFilesEl.innerHTML = "<li>No matching files.</li>";
+      vaultFilesEl.innerHTML = "<li class=\"vault-empty\">No matching files.</li>";
       return;
     }
 
-    vaultFilesEl.innerHTML = filtered
-      .map((file) => {
-        const active = file.path === state.activeVaultPath ? "active" : "";
-        return `<li class="${active}" data-path="${escapeHtml(file.path)}">${escapeHtml(file.path)}</li>`;
-      })
-      .join("");
+    const groups = [];
+    filtered.forEach((file) => {
+      const groupName = file.group || "Other";
+      let group = groups.find((entry) => entry.name === groupName);
+      if (!group) {
+        group = { name: groupName, files: [] };
+        groups.push(group);
+      }
+      group.files.push(file);
+    });
+
+    vaultFilesEl.innerHTML = groups.map((group) => {
+      const notes = group.files.map((file) => {
+        const active = file.path === state.activeVaultPath ? " active" : "";
+        const pinned = file.pinned ? "<span class=\"vault-pin\">PIN</span>" : "";
+        const meta = [
+          file.folder || "vault",
+          file.size_label || "",
+          formatVaultDate(file.updated_at)
+        ].filter(Boolean).join(" / ");
+        return `
+          <li class="vault-note${active}" data-path="${escapeHtml(file.path || "")}" data-testid="vault-note">
+            <div class="vault-note-title">
+              ${pinned}
+              <span>${escapeHtml(file.title || file.path || "Untitled note")}</span>
+            </div>
+            <div class="vault-note-meta">${escapeHtml(meta)}</div>
+          </li>
+        `;
+      }).join("");
+      return `
+        <li class="vault-group-heading" data-testid="vault-group">
+          <span>${escapeHtml(group.name)}</span>
+          <span>${group.files.length}</span>
+        </li>
+        ${notes}
+      `;
+    }).join("");
   }
 
   async function fetchVaultIndex() {
     try {
+      vaultMetaEl.textContent = "Loading vault...";
       const response = await fetch("/api/vault/index", { cache: "no-store" });
-      if (!response.ok) return;
+      if (!response.ok) {
+        throw new Error("Vault index unavailable.");
+      }
       const payload = await response.json();
       state.vaultFiles = payload.files || [];
+      if (!state.vaultFiles.length) {
+        state.activeVaultPath = "";
+        state.activeVaultMeta = null;
+        vaultCopyPathEl.disabled = true;
+        vaultFilesEl.innerHTML = "<li class=\"vault-empty\">No markdown files found.</li>";
+        vaultPreviewEl.innerHTML = "<p class=\"vault-error\">No vault notes are available yet.</p>";
+        vaultMetaEl.textContent = "0 notes";
+        return;
+      }
+
       renderVaultFileList();
-      if (!state.activeVaultPath && state.vaultFiles.length) {
-        await openVaultFile(state.vaultFiles[0].path);
+      const targetPath = chooseInitialVaultPath();
+      vaultMetaEl.textContent = `${state.vaultFiles.length} notes. Pinned shared notes stay at the top.`;
+      if (targetPath) {
+        await openVaultFile(targetPath);
       }
     } catch (_err) {
-      vaultFilesEl.innerHTML = "<li>Vault index unavailable.</li>";
+      vaultFilesEl.innerHTML = "<li class=\"vault-empty\">Vault index unavailable.</li>";
+      vaultPreviewEl.innerHTML = "<p class=\"vault-error\">Vault index unavailable.</p>";
+      vaultMetaEl.textContent = "Vault unavailable.";
+      vaultCopyPathEl.disabled = true;
     }
   }
 
+  function renderInlineMarkdown(text) {
+    const safe = escapeHtml(String(text || ""));
+    const withCode = safe.replace(/`([^`]+)`/g, "<code>$1</code>");
+    return withCode.replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g, (_match, label, href) => {
+      return `<a href="${href}" target="_blank" rel="noreferrer">${label}</a>`;
+    });
+  }
+
   function renderMarkdown(mdText) {
-    const lines = mdText.split(/\r?\n/);
+    const lines = String(mdText || "").split(/\r?\n/);
     let html = "";
-    let inList = false;
+    let listMode = "";
+    let inCode = false;
+    let codeLines = [];
 
     function closeList() {
-      if (inList) {
-        html += "</ul>";
-        inList = false;
+      if (!listMode) {
+        return;
       }
+      html += listMode === "ol" ? "</ol>" : "</ul>";
+      listMode = "";
+    }
+
+    function openList(mode) {
+      if (listMode === mode) {
+        return;
+      }
+      closeList();
+      if (mode === "ol") {
+        html += "<ol>";
+      } else if (mode === "task") {
+        html += "<ul class=\"task-list\">";
+      } else {
+        html += "<ul>";
+      }
+      listMode = mode;
+    }
+
+    function flushCode() {
+      html += `<pre><code>${escapeHtml(codeLines.join("\n"))}</code></pre>`;
+      codeLines = [];
     }
 
     lines.forEach((line) => {
-      const safe = escapeHtml(line);
+      if (/^```/.test(line)) {
+        if (inCode) {
+          flushCode();
+          inCode = false;
+        } else {
+          closeList();
+          inCode = true;
+          codeLines = [];
+        }
+        return;
+      }
+
+      if (inCode) {
+        codeLines.push(line);
+        return;
+      }
+
+      const taskMatch = line.match(/^\s*-\s+\[( |x|X)\]\s+(.*)$/);
+      const bulletMatch = line.match(/^\s*-\s+(.*)$/);
+      const numberedMatch = line.match(/^\s*\d+\.\s+(.*)$/);
+
       if (/^###\s+/.test(line)) {
         closeList();
-        html += `<h3>${safe.replace(/^###\s+/, "")}</h3>`;
+        html += `<h3>${renderInlineMarkdown(line.replace(/^###\s+/, ""))}</h3>`;
       } else if (/^##\s+/.test(line)) {
         closeList();
-        html += `<h2>${safe.replace(/^##\s+/, "")}</h2>`;
+        html += `<h2>${renderInlineMarkdown(line.replace(/^##\s+/, ""))}</h2>`;
       } else if (/^#\s+/.test(line)) {
         closeList();
-        html += `<h1>${safe.replace(/^#\s+/, "")}</h1>`;
-      } else if (/^\s*-\s+/.test(line)) {
-        if (!inList) {
-          html += "<ul>";
-          inList = true;
-        }
-        html += `<li>${safe.replace(/^\s*-\s+/, "")}</li>`;
+        html += `<h1>${renderInlineMarkdown(line.replace(/^#\s+/, ""))}</h1>`;
+      } else if (/^\s*---+\s*$/.test(line)) {
+        closeList();
+        html += "<hr>";
+      } else if (/^>\s?/.test(line)) {
+        closeList();
+        html += `<blockquote>${renderInlineMarkdown(line.replace(/^>\s?/, ""))}</blockquote>`;
+      } else if (taskMatch) {
+        openList("task");
+        const checked = taskMatch[1].toLowerCase() === "x" ? "x" : "";
+        html += `<li class="task-item"><span class="task-box">${checked}</span><span>${renderInlineMarkdown(taskMatch[2])}</span></li>`;
+      } else if (bulletMatch) {
+        openList("ul");
+        html += `<li>${renderInlineMarkdown(bulletMatch[1])}</li>`;
+      } else if (numberedMatch) {
+        openList("ol");
+        html += `<li>${renderInlineMarkdown(numberedMatch[1])}</li>`;
       } else if (!line.trim()) {
         closeList();
-        html += "<p></p>";
       } else {
         closeList();
-        const inline = safe.replace(/`([^`]+)`/g, "<code>$1</code>");
-        html += `<p>${inline}</p>`;
+        html += `<p>${renderInlineMarkdown(line)}</p>`;
       }
     });
+
+    if (inCode) {
+      flushCode();
+    }
     closeList();
     return html || "<p>(empty)</p>";
+  }
+
+  function renderVaultPreview(payload) {
+    const meta = [
+      payload.path || "",
+      payload.size_label || "",
+      formatVaultDate(payload.updated_at)
+    ].filter(Boolean).join(" / ");
+    const location = [
+      payload.group || "Vault",
+      payload.folder || ""
+    ].filter(Boolean).join(" / ");
+    return `
+      <header class="vault-preview-head">
+        <div class="vault-kicker">${escapeHtml(location)}</div>
+        <h2 class="vault-preview-title">${escapeHtml(payload.title || payload.path || "Vault note")}</h2>
+        <div class="vault-preview-meta">${escapeHtml(meta)}</div>
+      </header>
+      <div class="vault-preview-body">
+        ${renderMarkdown(payload.content || "")}
+      </div>
+    `;
+  }
+
+  function updateActiveVaultMeta(copied = false) {
+    const file = state.activeVaultMeta || {};
+    if (!state.activeVaultPath) {
+      vaultMetaEl.textContent = `${state.vaultFiles.length} notes`;
+      vaultCopyPathEl.disabled = true;
+      return;
+    }
+    const prefix = copied ? "Copied path: " : "Open: ";
+    const details = [
+      file.group || "Vault",
+      file.size_label || "",
+      formatVaultDate(file.updated_at)
+    ].filter(Boolean).join(" / ");
+    vaultMetaEl.textContent = `${prefix}${state.activeVaultPath}${details ? ` (${details})` : ""}`;
+    vaultCopyPathEl.disabled = false;
   }
 
   async function openVaultFile(path) {
     try {
       const response = await fetch(`/api/vault/read?path=${encodeURIComponent(path)}`, { cache: "no-store" });
       if (!response.ok) {
-        vaultPreviewEl.innerHTML = `<p>Unable to load ${escapeHtml(path)}.</p>`;
+        vaultPreviewEl.innerHTML = `<p class="vault-error">Unable to load ${escapeHtml(path)}.</p>`;
         return;
       }
       const payload = await response.json();
       state.activeVaultPath = payload.path || path;
+      state.activeVaultMeta = payload;
+      storageSet(VAULT_LAST_PATH_KEY, state.activeVaultPath);
       if (state.onboarding.active) {
         state.onboarding.vaultOpened = true;
       }
-      vaultPreviewEl.innerHTML = renderMarkdown(payload.content || "");
+      vaultPreviewEl.innerHTML = renderVaultPreview(payload);
+      updateActiveVaultMeta(false);
       renderVaultFileList();
       renderOnboarding();
     } catch (_err) {
-      vaultPreviewEl.innerHTML = `<p>Unable to load ${escapeHtml(path)}.</p>`;
+      vaultPreviewEl.innerHTML = `<p class="vault-error">Unable to load ${escapeHtml(path)}.</p>`;
     }
+  }
+
+  async function copyActiveVaultPath() {
+    if (!state.activeVaultPath) {
+      return;
+    }
+    const copied = await copyTextToClipboard(state.activeVaultPath);
+    updateActiveVaultMeta(copied);
   }
 
   function tickClock() {
@@ -3463,6 +3809,7 @@
     });
 
     vaultFilterEl.addEventListener("input", renderVaultFileList);
+    vaultCopyPathEl.addEventListener("click", copyActiveVaultPath);
     document.getElementById("vault-refresh").addEventListener("click", fetchVaultIndex);
 
     vaultFilesEl.addEventListener("click", (event) => {
