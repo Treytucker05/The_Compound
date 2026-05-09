@@ -22,6 +22,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 from commands import handle
 from quickstart import ensure_quickstart
+from radio import load_radio, summarize_radio
 from world import ROOT_PATH, Player, World
 
 ROOT_DIR = Path(__file__).parent.parent
@@ -29,6 +30,7 @@ HOST = os.environ.get("MUD_HOST", "0.0.0.0")
 PORT = int(os.environ.get("MUD_PORT", "8765"))
 NOTES_PATH = Path(os.environ.get("NOTES_PATH", str(ROOT_DIR / "data" / "notes.json")))
 BOARD_PATH = Path(os.environ.get("BOARD_PATH", str(ROOT_DIR / "data" / "board.json")))
+RADIO_PATH = Path(os.environ.get("RADIO_PATH", str(ROOT_DIR / "data" / "radio.json")))
 LOG_DIR = Path(os.environ.get("LOG_DIR", str(ROOT_DIR / "data" / "logs")))
 VAULT_DIR = ROOT_DIR / "vault"
 
@@ -62,6 +64,10 @@ def log_event(event_type: str, player_name: str, data: dict):
 
 def log_board_event(event_type: str, player_name: str, data: dict):
     log_event(f"board_{event_type}", player_name, data)
+
+
+def log_radio_event(event_type: str, player_name: str, data: dict):
+    log_event(f"radio_{event_type}", player_name, data)
 
 
 def load_board_snapshot() -> dict:
@@ -129,6 +135,7 @@ def next_action_from_board(board: dict) -> str:
 
 def build_pulse_payload() -> dict:
     board = load_board_snapshot()
+    radio = summarize_radio(load_radio(RADIO_PATH))
     columns = board.get("columns", {})
     counts = {
         "raw": len(columns.get("raw", [])),
@@ -157,6 +164,7 @@ def build_pulse_payload() -> dict:
         "recent_news": recent_news,
         "recent_events": read_event_tail(14),
         "quests": quests,
+        "radio": radio,
         "generated_at": datetime.now(timezone.utc).isoformat(),
     }
 
@@ -365,6 +373,11 @@ async def mud_handler(websocket):
                     "working",
                     "add",
                     "done",
+                    "ask",
+                    "inbox",
+                    "radio",
+                    "reply",
+                    "resolve",
                     "priority",
                     "solo",
                     "shared",
@@ -433,7 +446,9 @@ async def main():
     QUICKSTART_STATUS = ensure_quickstart(ROOT_DIR)
     world = World(root=ROOT_PATH, notes_path=NOTES_PATH)
     world.board_path = BOARD_PATH
+    world.radio_path = RADIO_PATH
     world.log_board_event = log_board_event
+    world.log_radio_event = log_radio_event
     connected_players.clear()
 
     print(f"[PORTAL] Scanning filesystem: {ROOT_PATH} ...")
@@ -443,6 +458,7 @@ async def main():
     print(f"[PORTAL] Event log: {EVENT_LOG}")
     print(f"[PORTAL] Notes: {NOTES_PATH}")
     print(f"[PORTAL] Board: {BOARD_PATH}")
+    print(f"[PORTAL] Radio: {RADIO_PATH}")
     if QUICKSTART_STATUS.get("messages"):
         for message in QUICKSTART_STATUS["messages"]:
             print(f"[PORTAL] {message}")

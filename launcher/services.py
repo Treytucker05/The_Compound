@@ -119,6 +119,7 @@ class EngineService:
         env["MUD_PORT"] = "8765"
         env["NOTES_PATH"] = str(self.data_dir / "notes.json")
         env["BOARD_PATH"] = str(self.data_dir / "board.json")
+        env["RADIO_PATH"] = str(self.data_dir / "radio.json")
         env["LOG_DIR"] = str(self.data_dir / "logs")
 
         # Load .env if present; resolve relative paths against root_dir

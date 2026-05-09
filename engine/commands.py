@@ -15,6 +15,7 @@ from board import (
     set_mode,
     start_work,
 )
+from radio import ask_question, load_radio, render_inbox, reply_to_thread, resolve_thread
 from vault_sync import sync as vault_sync
 from world import Player, World
 
@@ -29,6 +30,7 @@ def handle(player: Player, world: World, raw: str) -> str:
     args = parts[1] if len(parts) > 1 else ""
 
     board_path = getattr(world, "board_path", None)
+    radio_path = getattr(world, "radio_path", None)
 
     # Operational board
     if cmd == "board":
@@ -92,6 +94,44 @@ def handle(player: Player, world: World, raw: str) -> str:
         _log_board_event(world, "task_done", player, {"item": item, "note": note})
         _trigger_sync()
         return f"Moved to DONE: {item['title']}\nLogged: {note}\n\n{render_board(board, player.name, _online_players(world))}"
+
+    # Radio Inbox
+    if cmd == "ask":
+        target, text = _parse_target_message(args)
+        if not target or not text:
+            return "Use: ask <Trey|Joe> <question>"
+        radio, thread = ask_question(radio_path, player.name, target, text)
+        _log_radio_event(world, "question_sent", player, {"thread": thread})
+        _notify_radio(world, player, target, f"[RADIO #{thread['id']}] {player.name}: {text}")
+        return f"Radio sent to {thread['to']} as #{thread['id']}.\n\n{render_inbox(radio, player.name)}"
+
+    if cmd in ("inbox", "radio"):
+        radio = load_radio(radio_path)
+        return render_inbox(radio, player.name)
+
+    if cmd == "reply":
+        thread_id, text = _parse_target_message(args)
+        if not thread_id or not text:
+            return "Use: reply <id> <message>"
+        radio, thread = reply_to_thread(radio_path, thread_id, player.name, text)
+        if not thread:
+            return f"No radio thread matching: {thread_id}"
+        target = _other_radio_person(thread, player.name)
+        _log_radio_event(world, "reply_sent", player, {"thread": thread, "reply": text})
+        _notify_radio(world, player, target, f"[RADIO #{thread['id']}] {player.name}: {text}")
+        return f"Radio reply logged on #{thread['id']}.\n\n{render_inbox(radio, player.name)}"
+
+    if cmd == "resolve":
+        thread_id, note = _parse_target_message(args)
+        if not thread_id:
+            return "Use: resolve <id> <note>"
+        radio, thread = resolve_thread(radio_path, thread_id, player.name, note)
+        if not thread:
+            return f"No radio thread matching: {thread_id}"
+        target = _other_radio_person(thread, player.name)
+        _log_radio_event(world, "thread_resolved", player, {"thread": thread, "note": note})
+        _notify_radio(world, player, target, f"[RADIO #{thread['id']}] resolved by {player.name}: {note or 'resolved'}")
+        return f"Radio resolved #{thread['id']}.\n\n{render_inbox(radio, player.name)}"
 
     # Navigation by cardinal direction
     if cmd in ("n", "north"):
@@ -300,6 +340,10 @@ def _help() -> str:
         "  shared <item>        — Mark item as handoff-friendly\n"
         "  done <item> -- <note> — Move item to DONE and log what happened\n"
         "  next                 — Show the board with next best action\n"
+        "  ask <who> <question> — Send a Radio Inbox question\n"
+        "  inbox / radio        — Show your Radio Inbox\n"
+        "  reply <id> <message> — Reply to a radio thread\n"
+        "  resolve <id> <note>  — Close a radio thread\n"
         "  n, s, e, w, ne, nw, se, sw, u, d\n"
         "                       — Move by cardinal direction\n"
         "  cd / go <dir>        — Go to a subdirectory by name\n"
@@ -341,6 +385,29 @@ def _parse_done_args(args: str) -> tuple[str | None, str]:
     return None, args.strip()
 
 
+def _parse_target_message(args: str) -> tuple[str, str]:
+    parts = args.strip().split(None, 1)
+    if len(parts) < 2:
+        return args.strip(), ""
+    return parts[0].strip(), parts[1].strip()
+
+
+def _other_radio_person(thread: dict, actor: str) -> str:
+    sender = thread.get("from", "")
+    target = thread.get("to", "")
+    if sender.lower() == actor.lower():
+        return target
+    return sender
+
+
+def _notify_radio(world: World, sender: Player, target_name: str, message: str):
+    if not target_name:
+        return
+    target = getattr(world, "players", {}).get(target_name.lower())
+    if target and target is not sender:
+        target.send(message)
+
+
 def _trigger_sync():
     try:
         vault_sync()
@@ -350,5 +417,11 @@ def _trigger_sync():
 
 def _log_board_event(world: World, event_type: str, player: Player, data: dict):
     logger = getattr(world, "log_board_event", None)
+    if callable(logger):
+        logger(event_type, player.name, data)
+
+
+def _log_radio_event(world: World, event_type: str, player: Player, data: dict):
+    logger = getattr(world, "log_radio_event", None)
     if callable(logger):
         logger(event_type, player.name, data)

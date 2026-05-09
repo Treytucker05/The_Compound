@@ -18,6 +18,10 @@
 - `add <task>` -> Add a task
 - `working on <task>` -> Claim a task
 - `done <task> -- <result>` -> Log completion
+- `ask Joe <question>` -> Leave Joe a Radio Inbox question
+- `inbox` -> See open questions and replies
+- `reply <id> <message>` -> Reply to a Radio Inbox thread
+- `resolve <id> <note>` -> Close a Radio Inbox thread
 - `help` -> Full command list
 
 ### 4) Core Files To Check
