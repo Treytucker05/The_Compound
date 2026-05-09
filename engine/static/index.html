@@ -389,6 +389,17 @@
     font-size: 10px;
     font-weight: 700;
     white-space: nowrap;
+    cursor: pointer;
+    user-select: none;
+    transition: border-color 140ms ease, background 140ms ease, color 140ms ease;
+  }
+
+  #hud-status-pill:hover,
+  #hud-status-pill:focus-visible {
+    border-color: rgba(57, 217, 145, 0.56);
+    background: rgba(57, 217, 145, 0.14);
+    color: var(--accent);
+    outline: none;
   }
 
   #hud-status-pill[hidden] {
@@ -848,6 +859,7 @@
   #board-shell {
     width: min(1240px, calc(100vw - 32px));
     height: min(760px, calc(100vh - 32px));
+    position: relative;
     display: grid;
     grid-template-rows: auto auto 1fr;
     border: 1px solid var(--line-strong);
@@ -913,6 +925,123 @@
     gap: 10px;
     padding: 12px;
     overflow: auto;
+  }
+
+  #board-guide-panel {
+    position: absolute;
+    top: 118px;
+    right: 14px;
+    bottom: 14px;
+    width: min(390px, calc(100% - 28px));
+    z-index: 3;
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    border: 1px solid rgba(104, 197, 174, 0.42);
+    border-radius: 8px;
+    background:
+      linear-gradient(180deg, rgba(13, 32, 29, 0.98), rgba(5, 13, 12, 0.98)),
+      var(--bg-panel);
+    box-shadow: 0 18px 48px rgba(0, 0, 0, 0.52);
+    overflow: hidden;
+  }
+
+  #board-guide-panel[hidden] {
+    display: none;
+  }
+
+  #board-guide-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px;
+    border-bottom: 1px solid var(--line);
+    background: rgba(57, 217, 145, 0.08);
+  }
+
+  #board-guide-kicker {
+    color: var(--text-dim);
+    font-size: 10px;
+    font-weight: 800;
+    text-transform: uppercase;
+  }
+
+  #board-guide-title {
+    margin-top: 4px;
+    color: var(--accent);
+    font-size: 16px;
+    line-height: 1.25;
+  }
+
+  #board-guide-body {
+    overflow: auto;
+    padding: 12px;
+  }
+
+  .guide-current {
+    margin-bottom: 12px;
+    border: 1px solid rgba(83, 126, 116, 0.24);
+    border-radius: 7px;
+    background: rgba(0, 0, 0, 0.16);
+    padding: 9px;
+    color: var(--text-soft);
+    font-size: 11px;
+    line-height: 1.45;
+  }
+
+  .guide-section {
+    margin-bottom: 12px;
+    border: 1px solid rgba(83, 126, 116, 0.28);
+    border-radius: 7px;
+    background: rgba(5, 13, 12, 0.7);
+    padding: 10px;
+  }
+
+  .guide-section h4 {
+    color: var(--text);
+    font-size: 12px;
+    margin-bottom: 4px;
+  }
+
+  .guide-section p {
+    color: var(--text-dim);
+    font-size: 11px;
+    line-height: 1.4;
+    margin-bottom: 7px;
+  }
+
+  .guide-section ol {
+    margin-left: 18px;
+    color: var(--text-soft);
+    font-size: 11px;
+    line-height: 1.45;
+  }
+
+  .guide-section li + li {
+    margin-top: 5px;
+  }
+
+  .guide-answer {
+    margin-top: 8px;
+    border-top: 1px solid rgba(83, 126, 116, 0.22);
+    padding-top: 7px;
+    color: var(--text-dim);
+    font-size: 11px;
+    line-height: 1.4;
+  }
+
+  #board-guide-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    border-top: 1px solid var(--line);
+    background: rgba(5, 13, 12, 0.82);
+  }
+
+  #board-guide-copy-status {
+    min-width: 0;
+    color: var(--text-dim);
+    font-size: 11px;
   }
 
   .board-column {
@@ -1134,6 +1263,12 @@
     font-size: 10px;
     font-weight: 800;
     padding: 5px 7px;
+  }
+
+  .board-mini-btn.primary {
+    border-color: rgba(57, 217, 145, 0.34);
+    background: rgba(57, 217, 145, 0.1);
+    color: var(--accent);
   }
 
   .board-mini-btn:hover {
@@ -1363,6 +1498,13 @@
     #board-columns {
       grid-template-columns: 1fr;
     }
+
+    #board-guide-panel {
+      top: 142px;
+      right: 8px;
+      bottom: 8px;
+      width: calc(100% - 16px);
+    }
   }
 </style>
 </head>
@@ -1408,13 +1550,13 @@
         <span id="hud-clock">--:--:--</span>
         <div id="hud-sub-right">
           <span id="hud-message">Immersive mode: active</span>
-          <span id="hud-status-pill" hidden>Status: observing</span>
+          <span id="hud-status-pill" role="button" tabindex="0" title="Click to change status" hidden>Status: observing</span>
           <button class="btn btn-tour" id="tour-open" data-testid="guide-open">Guide Me</button>
         </div>
       </div>
     </div>
     <div id="tabs">
-      <button class="tab-btn active" data-tab="ops">Ops</button>
+      <button class="tab-btn active" data-tab="ops">Dashboard</button>
       <button class="tab-btn" data-tab="vault">Vault</button>
       <button class="tab-btn" data-tab="world">World</button>
     </div>
@@ -1530,10 +1672,24 @@
       <button class="btn" id="board-close" type="button">Close</button>
     </div>
     <form id="board-add-form">
-      <input id="board-title-input" type="text" autocomplete="off" placeholder="Add a task to New...">
+      <input id="board-title-input" type="text" autocomplete="off" placeholder="Add a task to Ideas...">
       <button class="btn" type="submit">Add Task</button>
     </form>
     <div id="board-columns"></div>
+    <aside id="board-guide-panel" data-testid="board-guide-panel" hidden>
+      <div id="board-guide-head">
+        <div>
+          <div id="board-guide-kicker">Planning Guide</div>
+          <h3 id="board-guide-title">Guide this card</h3>
+        </div>
+        <button class="board-mini-btn" id="board-guide-close" type="button">Close</button>
+      </div>
+      <div id="board-guide-body"></div>
+      <div id="board-guide-actions">
+        <button class="board-mini-btn primary" id="board-guide-copy" data-testid="board-guide-copy" type="button">Copy LLM Prompt</button>
+        <span id="board-guide-copy-status" aria-live="polite"></span>
+      </div>
+    </aside>
   </div>
 </div>
 
@@ -1623,6 +1779,12 @@
   const boardAddFormEl = document.getElementById("board-add-form");
   const boardTitleInputEl = document.getElementById("board-title-input");
   const boardColumnsEl = document.getElementById("board-columns");
+  const boardGuidePanelEl = document.getElementById("board-guide-panel");
+  const boardGuideTitleEl = document.getElementById("board-guide-title");
+  const boardGuideBodyEl = document.getElementById("board-guide-body");
+  const boardGuideCloseEl = document.getElementById("board-guide-close");
+  const boardGuideCopyEl = document.getElementById("board-guide-copy");
+  const boardGuideCopyStatusEl = document.getElementById("board-guide-copy-status");
 
   const loginOverlayEl = document.getElementById("login-overlay");
   const loginOnboardingEl = document.getElementById("login-onboarding");
@@ -1650,6 +1812,9 @@
     pulse: null,
     board: null,
     boardDraggingId: "",
+    activeGuideItemId: "",
+    guideTemplates: null,
+    guidePromptTemplate: "",
     vaultFiles: [],
     activeVaultPath: "",
     focusEndMs: null,
@@ -1678,7 +1843,7 @@
   const HUD_STORAGE_KEYS = [ONBOARDING_KEY, PROFILE_KEY, SHOW_ONBOARDING_KEY];
   const BOARD_COLUMNS = [
     { id: "raw", label: "Ideas", empty: "Capture rough thoughts here." },
-    { id: "refined", label: "Plans", empty: "Ideas become shaped plans here." },
+    { id: "refined", label: "Plan", empty: "Shape the why, steps, and done check here." },
     { id: "planned", label: "Ready", empty: "Ready-to-implement work waits here." },
     { id: "in_progress", label: "Doing", empty: "Active owned work goes here." },
     { id: "done", label: "Done", empty: "Completed work lands here." }
@@ -1688,6 +1853,51 @@
     steps: "steps",
     acceptance: "done check"
   };
+  const DEFAULT_GUIDE_TEMPLATES = {
+    why: {
+      label: "Why / use",
+      summary: "Explain why the idea matters before it becomes a plan.",
+      questions: [
+        "What is the idea in one sentence?",
+        "Who is this for: Trey, Joe, or both?",
+        "What problem does it solve, or what useful/fun thing does it add?",
+        "What is the smallest useful version?",
+        "Where does it belong: HUD, vault, MUD/world, launcher, or server?"
+      ]
+    },
+    steps: {
+      label: "Steps",
+      summary: "Turn the idea into a short build path.",
+      questions: [
+        "What has to change first?",
+        "What files, screens, or commands are likely involved?",
+        "What can be tested in the browser before moving on?",
+        "What should be saved to the shared vault or board?"
+      ]
+    },
+    acceptance: {
+      label: "Done check",
+      summary: "Describe the proof that this is ready to use.",
+      questions: [
+        "What should Trey and Joe both be able to see or do?",
+        "What browser check proves it works?",
+        "What server or data check proves it persisted?",
+        "What should be cut for v1?"
+      ]
+    }
+  };
+  const DEFAULT_GUIDE_PROMPT_TEMPLATE = [
+    "Help turn this Compound board card into a buildable plan.",
+    "",
+    "Answer the guide questions, keep the scope small, and separate must-have v1 work from later ideas.",
+    "",
+    "Required output:",
+    "1. Why / use",
+    "2. Steps",
+    "3. Done check",
+    "4. Browser verification",
+    "5. Cut for v1"
+  ].join("\n");
 
   function storageGet(key, fallback = "") {
     try {
@@ -1988,6 +2198,133 @@
     return match ? match.label : columnId;
   }
 
+  function findBoardItemById(id) {
+    const columns = (state.board && state.board.columns) || {};
+    for (const column of BOARD_COLUMNS) {
+      const item = (columns[column.id] || []).find((candidate) => candidate.id === id);
+      if (item) {
+        return { item, columnId: column.id };
+      }
+    }
+    return null;
+  }
+
+  function guideTemplates() {
+    return state.guideTemplates || DEFAULT_GUIDE_TEMPLATES;
+  }
+
+  function renderGuideSection(field, item) {
+    const template = guideTemplates()[field] || DEFAULT_GUIDE_TEMPLATES[field] || {};
+    const questions = Array.isArray(template.questions) ? template.questions : [];
+    const answer = String(item[field] || "").trim();
+    const answerText = answer ? escapeHtml(answer) : "<em>blank</em>";
+    return `
+      <section class="guide-section">
+        <h4>${escapeHtml(template.label || BOARD_FIELD_LABELS[field] || field)}</h4>
+        <p>${escapeHtml(template.summary || "")}</p>
+        <ol>
+          ${questions.map((question) => `<li>${escapeHtml(question)}</li>`).join("")}
+        </ol>
+        <div class="guide-answer">Current answer: ${answerText}</div>
+      </section>
+    `;
+  }
+
+  function renderBoardGuide() {
+    if (!state.activeGuideItemId) {
+      boardGuidePanelEl.hidden = true;
+      return;
+    }
+    const match = findBoardItemById(state.activeGuideItemId);
+    if (!match) {
+      state.activeGuideItemId = "";
+      boardGuidePanelEl.hidden = true;
+      return;
+    }
+    const { item, columnId } = match;
+    const gate = item.gate_status || {};
+    const missing = Array.isArray(gate.missing) ? gate.missing : [];
+    const missingText = missing.length
+      ? `Missing: ${missing.map((field) => BOARD_FIELD_LABELS[field] || field).join(", ")}.`
+      : "Plan basics are filled in.";
+    boardGuideTitleEl.textContent = item.title || "Guide this card";
+    boardGuideBodyEl.innerHTML = `
+      <div class="guide-current">
+        <strong>${escapeHtml(boardColumnLabel(columnId))}</strong><br>
+        ${escapeHtml(missingText)}
+      </div>
+      ${["why", "steps", "acceptance"].map((field) => renderGuideSection(field, item)).join("")}
+    `;
+    boardGuidePanelEl.hidden = false;
+  }
+
+  function closeBoardGuide() {
+    state.activeGuideItemId = "";
+    boardGuideCopyStatusEl.textContent = "";
+    boardGuidePanelEl.hidden = true;
+  }
+
+  function buildGuidePrompt(item, columnId) {
+    const sections = ["why", "steps", "acceptance"].map((field) => {
+      const template = guideTemplates()[field] || DEFAULT_GUIDE_TEMPLATES[field] || {};
+      const questions = (template.questions || []).map((question, index) => {
+        return `${index + 1}. ${question}`;
+      }).join("\n");
+      return [
+        template.label || BOARD_FIELD_LABELS[field] || field,
+        `Current answer: ${String(item[field] || "").trim() || "(blank)"}`,
+        "Questions:",
+        questions
+      ].join("\n");
+    }).join("\n\n");
+    return [
+      state.guidePromptTemplate || DEFAULT_GUIDE_PROMPT_TEMPLATE,
+      "",
+      `Card: ${item.title || "Untitled task"}`,
+      `Stage: ${boardColumnLabel(columnId)}`,
+      `Owner: ${item.owner || "unassigned"}`,
+      "",
+      sections
+    ].join("\n");
+  }
+
+  async function copyTextToClipboard(text) {
+    if (navigator.clipboard && window.isSecureContext) {
+      try {
+        await navigator.clipboard.writeText(text);
+        return true;
+      } catch (_err) {
+        // Fall through to the textarea copy path below.
+      }
+    }
+    const textArea = document.createElement("textarea");
+    textArea.value = text;
+    textArea.setAttribute("readonly", "");
+    textArea.style.position = "fixed";
+    textArea.style.left = "-9999px";
+    document.body.appendChild(textArea);
+    textArea.select();
+    let copied = false;
+    try {
+      copied = document.execCommand("copy");
+    } catch (_err) {
+      copied = false;
+    }
+    document.body.removeChild(textArea);
+    return copied;
+  }
+
+  async function copyActiveGuidePrompt() {
+    const match = findBoardItemById(state.activeGuideItemId);
+    if (!match) {
+      boardGuideCopyStatusEl.textContent = "Card not found.";
+      return;
+    }
+    const prompt = buildGuidePrompt(match.item, match.columnId);
+    const copied = await copyTextToClipboard(prompt);
+    boardGuideCopyStatusEl.textContent = copied ? "Prompt copied." : "Copy failed.";
+  }
+
   function boardUrl(path, params = {}) {
     const url = new URL(path, window.location.origin);
     Object.entries(params).forEach(([key, value]) => {
@@ -2005,11 +2342,14 @@
 
   function applyBoardPayload(payload) {
     state.board = payload.board || payload;
+    state.guideTemplates = payload.guide_templates || state.guideTemplates || DEFAULT_GUIDE_TEMPLATES;
+    state.guidePromptTemplate = payload.guide_prompt_template || state.guidePromptTemplate || DEFAULT_GUIDE_PROMPT_TEMPLATE;
     if (payload.pulse) {
       state.pulse = payload.pulse;
       renderPulse();
     }
     renderBoard();
+    renderBoardGuide();
   }
 
   async function boardRequest(path, params = {}) {
@@ -2044,6 +2384,7 @@
 
   function closeBoardPanel() {
     boardOverlayEl.hidden = true;
+    closeBoardGuide();
     cmdInput.focus();
   }
 
@@ -2055,10 +2396,18 @@
   }
 
   function boardForwardTarget(columnId) {
-    if (columnId === "raw") return { column: "refined", label: "Plan" };
-    if (columnId === "refined") return { column: "planned", label: "Ready" };
-    if (columnId === "planned") return { column: "in_progress", label: "Start" };
-    if (columnId === "in_progress") return { column: "done", label: "Done" };
+    if (columnId === "raw") {
+      return { column: "refined", label: "Plan", title: "Move this card into Plan." };
+    }
+    if (columnId === "refined") {
+      return { column: "planned", label: "Mark Ready", title: "Move this card into Ready." };
+    }
+    if (columnId === "planned") {
+      return { column: "in_progress", label: "Start", title: "Move this card into Doing and claim it." };
+    }
+    if (columnId === "in_progress") {
+      return { column: "done", label: "Done", title: "Move this card into Done." };
+    }
     return null;
   }
 
@@ -2108,9 +2457,12 @@
     const updatedPill = updated ? `<span class="board-pill">${escapeHtml(updated)}</span>` : "";
     const forward = boardForwardTarget(columnId);
     const forwardButton = forward
-      ? `<button class="board-mini-btn" type="button" data-board-action="move" data-target-column="${forward.column}" data-id="${escapeHtml(item.id || "")}">${forward.label}</button>`
+      ? `<button class="board-mini-btn primary" type="button" data-board-action="move" data-target-column="${forward.column}" data-id="${escapeHtml(item.id || "")}" title="${escapeHtml(forward.title)}" aria-label="${escapeHtml(forward.title)}">${forward.label}</button>`
       : "";
-    const deleteButton = `<button class="board-mini-btn danger" type="button" data-board-action="delete" data-id="${escapeHtml(item.id || "")}">Delete</button>`;
+    const guideTitle = "Open guiding questions and copy an LLM prompt for this card.";
+    const guideButton = `<button class="board-mini-btn" type="button" data-board-action="guide" data-id="${escapeHtml(item.id || "")}" data-testid="board-guide-button" title="${guideTitle}" aria-label="${guideTitle}">Guide</button>`;
+    const deleteTitle = "Delete this card from the board.";
+    const deleteButton = `<button class="board-mini-btn danger" type="button" data-board-action="delete" data-id="${escapeHtml(item.id || "")}" title="${deleteTitle}" aria-label="${deleteTitle}">Delete</button>`;
 
     return `
       <article class="board-task stage-${escapeHtml(columnId)}" draggable="true" data-id="${escapeHtml(item.id || "")}" data-testid="board-card">
@@ -2125,6 +2477,7 @@
         ${renderBoardDetails(item)}
         <div class="board-task-actions">
           ${forwardButton}
+          ${guideButton}
           ${deleteButton}
         </div>
       </article>
@@ -2662,7 +3015,16 @@
       });
     });
 
+    hudStatusPillEl.addEventListener("click", toggleStatusPanel);
+    hudStatusPillEl.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter" && event.key !== " ") return;
+      event.preventDefault();
+      toggleStatusPanel();
+    });
+
     boardCloseEl.addEventListener("click", closeBoardPanel);
+    boardGuideCloseEl.addEventListener("click", closeBoardGuide);
+    boardGuideCopyEl.addEventListener("click", copyActiveGuidePrompt);
 
     boardOverlayEl.addEventListener("click", (event) => {
       if (event.target === boardOverlayEl) {
@@ -2778,7 +3140,11 @@
       const action = actionButton.dataset.boardAction;
       if (!id) return;
       try {
-        if (action === "move") {
+        if (action === "guide") {
+          state.activeGuideItemId = id;
+          boardGuideCopyStatusEl.textContent = "";
+          renderBoardGuide();
+        } else if (action === "move") {
           const targetColumn = actionButton.dataset.targetColumn;
           if (targetColumn) {
             await moveBoardTask(id, targetColumn);

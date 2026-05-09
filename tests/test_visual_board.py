@@ -74,6 +74,20 @@ class VisualBoardTests(unittest.TestCase):
         self.assertEqual(payload["board"]["columns"]["raw"], [])
         self.assertIn("deleted", payload["board"]["new"][-1]["text"].lower())
 
+    def test_board_payload_includes_guide_questions_and_prompt_template(self):
+        payload = server.board_payload(load_board(self.board_path))
+
+        self.assertIn("guide_templates", payload)
+        self.assertIn("guide_prompt_template", payload)
+        self.assertIn("why", payload["guide_templates"])
+        self.assertIn("steps", payload["guide_templates"])
+        self.assertIn("acceptance", payload["guide_templates"])
+        self.assertIn(
+            "Who is this for: Trey, Joe, or both?",
+            payload["guide_templates"]["why"]["questions"],
+        )
+        self.assertIn("Cut for v1", payload["guide_prompt_template"])
+
 
 if __name__ == "__main__":
     unittest.main()

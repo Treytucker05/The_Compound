@@ -45,7 +45,7 @@ connected_players: dict = {}
 
 STAGE_LABELS = {
     "raw": "Ideas",
-    "refined": "Plans",
+    "refined": "Plan",
     "planned": "Ready",
     "in_progress": "Doing",
     "done": "Done",
@@ -54,15 +54,15 @@ STAGE_LABELS = {
 STAGE_RULES = {
     "raw": {
         "label": "Ideas",
-        "next": "Plans",
+        "next": "Plan",
         "missing": ("why",),
-        "message": "Add a why/use note before planning.",
+        "message": "Add why/use before moving into Plan.",
     },
     "refined": {
-        "label": "Plans",
+        "label": "Plan",
         "next": "Ready",
         "missing": ("why", "steps", "acceptance"),
-        "message": "Add why/use, steps, and an acceptance check before ready.",
+        "message": "Add why/use, steps, and a done check before Ready.",
     },
     "planned": {
         "label": "Ready",
@@ -83,6 +83,52 @@ STAGE_RULES = {
         "message": "Completed work.",
     },
 }
+
+GUIDE_TEMPLATES = {
+    "why": {
+        "label": "Why / use",
+        "summary": "Explain why the idea matters before it becomes a plan.",
+        "questions": [
+            "What is the idea in one sentence?",
+            "Who is this for: Trey, Joe, or both?",
+            "What problem does it solve, or what useful/fun thing does it add?",
+            "What is the smallest useful version?",
+            "Where does it belong: HUD, vault, MUD/world, launcher, or server?",
+        ],
+    },
+    "steps": {
+        "label": "Steps",
+        "summary": "Turn the idea into a short build path.",
+        "questions": [
+            "What has to change first?",
+            "What files, screens, or commands are likely involved?",
+            "What can be tested in the browser before moving on?",
+            "What should be saved to the shared vault or board?",
+        ],
+    },
+    "acceptance": {
+        "label": "Done check",
+        "summary": "Describe the proof that this is ready to use.",
+        "questions": [
+            "What should Trey and Joe both be able to see or do?",
+            "What browser check proves it works?",
+            "What server or data check proves it persisted?",
+            "What should be cut for v1?",
+        ],
+    },
+}
+
+GUIDE_PROMPT_TEMPLATE = """Help turn this Compound board card into a buildable plan.
+
+Answer the guide questions, keep the scope small, and separate must-have v1 work from later ideas.
+
+Required output:
+1. Why / use
+2. Steps
+3. Done check
+4. Browser verification
+5. Cut for v1
+"""
 
 
 def require_world() -> World:
@@ -153,7 +199,13 @@ def board_payload(board: dict | None = None) -> dict:
     for column in COLUMNS:
         for item in board.get("columns", {}).get(column, []):
             item["gate_status"] = gate_status_for_item(item, column)
-    return {"board": board, "pulse": build_pulse_payload(), "stage_rules": STAGE_RULES}
+    return {
+        "board": board,
+        "pulse": build_pulse_payload(),
+        "stage_rules": STAGE_RULES,
+        "guide_templates": GUIDE_TEMPLATES,
+        "guide_prompt_template": GUIDE_PROMPT_TEMPLATE,
+    }
 
 
 def board_actor(query: dict) -> str:
