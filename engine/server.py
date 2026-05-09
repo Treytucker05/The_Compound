@@ -24,7 +24,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 from board import COLUMNS, add_item, load_board, save_board, utc_now
 from commands import handle
 from quickstart import ensure_quickstart
-from radio import load_radio, summarize_radio
+from radio import ask_question, load_radio, reply_to_thread, resolve_thread, summarize_radio
 from vault_sync import sync as vault_sync
 from world import ROOT_PATH, Player, World
 
@@ -210,6 +210,87 @@ def board_payload(board: dict | None = None) -> dict:
 
 def board_actor(query: dict) -> str:
     return query_value(query, "actor", "portal")[:32] or "portal"
+
+
+def radio_actor(query: dict) -> str:
+    return query_value(query, "actor", "portal")[:32] or "portal"
+
+
+def radio_payload(actor: str = "", include_resolved: bool = False) -> dict:
+    radio = load_radio(RADIO_PATH)
+    actor_lower = actor.strip().lower()
+    threads = []
+    for thread in radio.get("threads", []):
+        if not include_resolved and thread.get("status") != "open":
+            continue
+        if actor_lower in ("trey", "joe"):
+            participants = {thread.get("from", "").lower(), thread.get("to", "").lower()}
+            if actor_lower not in participants:
+                continue
+        threads.append(radio_thread_summary(thread))
+    return {
+        "actor": actor or "portal",
+        "radio": summarize_radio(radio),
+        "threads": threads[-12:],
+        "pulse": build_pulse_payload(),
+    }
+
+
+def radio_thread_summary(thread: dict) -> dict:
+    messages = thread.get("messages", [])
+    first = messages[0] if messages else {}
+    latest = messages[-1] if messages else {}
+    return {
+        "id": thread.get("id", ""),
+        "from": thread.get("from", ""),
+        "to": thread.get("to", ""),
+        "status": thread.get("status", "open"),
+        "text": first.get("text", ""),
+        "latest_from": latest.get("from", ""),
+        "latest_text": latest.get("text", ""),
+        "updated_at": thread.get("updated_at", ""),
+        "messages": messages[-6:],
+    }
+
+
+def api_ask_radio(query: dict) -> tuple[int, dict]:
+    actor = radio_actor(query)
+    target = query_value(query, "to")[:32]
+    text = query_value(query, "text")[:800]
+    if not target or not text:
+        return 400, {"error": "Missing recipient or message."}
+
+    radio, thread = ask_question(RADIO_PATH, actor, target, text)
+    log_radio_event("question_sent_ui", actor, {"thread": thread})
+    return 200, radio_payload(actor)
+
+
+def api_reply_radio(query: dict) -> tuple[int, dict]:
+    actor = radio_actor(query)
+    thread_id = query_value(query, "id")
+    text = query_value(query, "text")[:800]
+    if not thread_id or not text:
+        return 400, {"error": "Missing thread id or message."}
+
+    _radio, thread = reply_to_thread(RADIO_PATH, thread_id, actor, text)
+    if not thread:
+        return 404, {"error": "Radio thread not found."}
+    log_radio_event("reply_sent_ui", actor, {"thread": thread, "reply": text})
+    return 200, radio_payload(actor)
+
+
+def api_resolve_radio(query: dict) -> tuple[int, dict]:
+    actor = radio_actor(query)
+    thread_id = query_value(query, "id")
+    note = query_value(query, "note")[:800]
+    if not thread_id:
+        return 400, {"error": "Missing thread id."}
+
+    _radio, thread = resolve_thread(RADIO_PATH, thread_id, actor, note)
+    if not thread:
+        return 404, {"error": "Radio thread not found."}
+    log_radio_event("thread_resolved_ui", actor, {"thread": thread, "note": note})
+    return 200, radio_payload(actor)
 
 
 def find_board_item(board: dict, item_id: str) -> tuple[str, int, dict] | None:
@@ -753,6 +834,29 @@ async def process_request(connection, request):
 
     if path == "/api/board/delete":
         status, payload = api_delete_board_item(query)
+        if status == 200:
+            await broadcast_pulse()
+        return json_response(connection, status, payload)
+
+    if path == "/api/radio":
+        actor = radio_actor(query)
+        include_resolved = query_bool(query, "include_resolved", False)
+        return json_response(connection, 200, radio_payload(actor, include_resolved))
+
+    if path == "/api/radio/ask":
+        status, payload = api_ask_radio(query)
+        if status == 200:
+            await broadcast_pulse()
+        return json_response(connection, status, payload)
+
+    if path == "/api/radio/reply":
+        status, payload = api_reply_radio(query)
+        if status == 200:
+            await broadcast_pulse()
+        return json_response(connection, status, payload)
+
+    if path == "/api/radio/resolve":
+        status, payload = api_resolve_radio(query)
         if status == 200:
             await broadcast_pulse()
         return json_response(connection, status, payload)

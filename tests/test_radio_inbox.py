@@ -11,6 +11,7 @@ sys.path.insert(0, str(ENGINE))
 from commands import handle
 from radio import ask_question, load_radio, render_inbox, reply_to_thread, resolve_thread
 from world import Player
+import server
 
 
 class DummyWorld:
@@ -83,6 +84,43 @@ class RadioInboxTests(unittest.TestCase):
             resolve_result = handle(trey, world, f"resolve {thread_id} Thanks.")
             self.assertIn("Radio resolved", resolve_result)
             self.assertEqual([event[0] for event in world.events], ["question_sent", "reply_sent", "thread_resolved"])
+
+    def test_radio_api_ask_reply_and_resolve_for_hud(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "radio.json"
+            original_radio_path = server.RADIO_PATH
+            original_build_pulse_payload = server.build_pulse_payload
+            original_log_radio_event = server.log_radio_event
+            server.RADIO_PATH = path
+            server.build_pulse_payload = lambda: {}
+            server.log_radio_event = lambda *args, **kwargs: None
+            try:
+                status, payload = server.api_ask_radio(
+                    {"actor": ["Trey"], "to": ["Joe"], "text": ["Can you check the vault?"]}
+                )
+                self.assertEqual(status, 200)
+                self.assertEqual(payload["radio"]["open_count"], 1)
+                self.assertEqual(payload["threads"][0]["from"], "Trey")
+                self.assertEqual(payload["threads"][0]["to"], "Joe")
+                thread_id = payload["threads"][0]["id"]
+
+                status, payload = server.api_reply_radio(
+                    {"actor": ["Joe"], "id": [thread_id], "text": ["Yes, checking now."]}
+                )
+                self.assertEqual(status, 200)
+                self.assertEqual(payload["threads"][0]["latest_from"], "Joe")
+                self.assertEqual(payload["threads"][0]["latest_text"], "Yes, checking now.")
+
+                status, payload = server.api_resolve_radio(
+                    {"actor": ["Trey"], "id": [thread_id], "note": ["Handled."]}
+                )
+                self.assertEqual(status, 200)
+                self.assertEqual(payload["radio"]["open_count"], 0)
+                self.assertEqual(payload["radio"]["resolved_count"], 1)
+            finally:
+                server.RADIO_PATH = original_radio_path
+                server.build_pulse_payload = original_build_pulse_payload
+                server.log_radio_event = original_log_radio_event
 
 
 if __name__ == "__main__":
