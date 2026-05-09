@@ -171,6 +171,8 @@ class Player:
         self.room = None
         self.ws = ws
         self.status = "observing"
+        self.last_action = "entered the Compound"
+        self.last_action_at = ""
 
     def prompt(self) -> str:
         return f"{self.name}@compound> "

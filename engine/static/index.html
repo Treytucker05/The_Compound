@@ -107,9 +107,18 @@
     position: relative;
     display: grid;
     grid-template-columns: minmax(520px, 1.45fr) minmax(390px, 0.92fr);
+    transition: grid-template-columns 180ms ease, grid-template-rows 180ms ease;
     gap: 14px;
     height: 100vh;
     padding: 14px;
+  }
+
+  body[data-layout-focus="terminal"] #layout {
+    grid-template-columns: minmax(560px, 1.45fr) minmax(320px, 0.62fr);
+  }
+
+  body[data-layout-focus="hud"] #layout {
+    grid-template-columns: minmax(320px, 0.62fr) minmax(560px, 1.45fr);
   }
 
   .panel {
@@ -153,7 +162,7 @@
 
   #terminal-title {
     display: flex;
-    align-items: center;
+    align-items: flex-end;
     gap: 9px;
     font-size: 13px;
     font-weight: 700;
@@ -334,7 +343,7 @@
 
   #hud-pane {
     display: grid;
-    grid-template-rows: auto auto 1fr;
+    grid-template-rows: auto auto auto 1fr;
     min-width: 0;
     min-height: 0;
   }
@@ -369,18 +378,89 @@
 
   #hud-sub-right {
     display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    width: min(360px, 100%);
+    min-width: 0;
+  }
+
+  #operators-panel {
+    width: 100%;
+    min-width: 0;
+    border: 1px solid rgba(57, 217, 145, 0.22);
+    border-radius: 8px;
+    background: rgba(5, 13, 12, 0.34);
+    padding: 7px 8px;
+  }
+
+  #operators-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 5px;
+    color: var(--text-dim);
+    font-size: 8px;
+    font-weight: 800;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+  }
+
+  #hud-message {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    text-align: right;
+    color: rgba(143, 177, 170, 0.76);
+  }
+
+  #operators-list {
+    display: grid;
+    gap: 5px;
+  }
+
+  .operator-presence-row {
+    display: grid;
+    grid-template-columns: minmax(42px, auto) auto minmax(0, 1fr);
     align-items: center;
     gap: 8px;
     min-width: 0;
   }
 
-  #hud-message {
+  .operator-name {
+    color: var(--text-soft);
+    font-size: 11px;
+    white-space: nowrap;
+  }
+
+  .operator-online {
+    color: var(--text-dim);
+    font-size: 9px;
+    white-space: nowrap;
+  }
+
+  .operator-room,
+  .operator-action {
+    grid-column: 1 / -1;
+    color: var(--text-dim);
+    font-size: 9px;
+    line-height: 1.35;
+    min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
 
-  #hud-status-pill {
+  .operator-room strong,
+  .operator-action strong {
+    color: var(--accent-2);
+    font-weight: 800;
+  }
+
+  .operator-status-pill {
+    justify-self: end;
     border: 1px solid rgba(57, 217, 145, 0.28);
     border-radius: 999px;
     background: rgba(57, 217, 145, 0.08);
@@ -389,21 +469,26 @@
     font-size: 10px;
     font-weight: 700;
     white-space: nowrap;
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-align: left;
+  }
+
+  button.operator-status-pill {
+    font: inherit;
     cursor: pointer;
     user-select: none;
     transition: border-color 140ms ease, background 140ms ease, color 140ms ease;
   }
 
-  #hud-status-pill:hover,
-  #hud-status-pill:focus-visible {
+  button.operator-status-pill:hover,
+  button.operator-status-pill:focus-visible {
     border-color: rgba(57, 217, 145, 0.56);
     background: rgba(57, 217, 145, 0.14);
     color: var(--accent);
     outline: none;
-  }
-
-  #hud-status-pill[hidden] {
-    display: none;
   }
 
   #tabs {
@@ -412,6 +497,43 @@
     padding: 9px 12px;
     border-bottom: 1px solid var(--line);
     background: rgba(5, 13, 12, 0.74);
+  }
+
+  #focus-controls {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 12px;
+    border-bottom: 1px solid rgba(83, 126, 116, 0.24);
+    background: rgba(6, 15, 14, 0.58);
+  }
+
+  .focus-label {
+    color: var(--text-dim);
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .focus-mode-btn {
+    border: 1px solid rgba(83, 126, 116, 0.28);
+    border-radius: 999px;
+    background: rgba(7, 15, 14, 0.72);
+    color: var(--text-dim);
+    cursor: pointer;
+    font-size: 10px;
+    font-weight: 800;
+    padding: 4px 8px;
+    text-transform: uppercase;
+    transition: border-color 0.18s ease, background 0.18s ease, color 0.18s ease;
+  }
+
+  .focus-mode-btn:hover,
+  .focus-mode-btn.active {
+    border-color: rgba(57, 217, 145, 0.62);
+    background: rgba(57, 217, 145, 0.12);
+    color: var(--good);
   }
 
   .tab-btn {
@@ -756,6 +878,7 @@
   }
 
   .btn-tour {
+    align-self: flex-end;
     padding: 4px 7px;
     font-size: 9px;
     text-transform: uppercase;
@@ -847,9 +970,46 @@
 
   #vault-grid {
     display: grid;
-    grid-template-columns: minmax(150px, 0.46fr) minmax(0, 1fr);
-    gap: 9px;
+    grid-template-columns: minmax(170px, var(--vault-list-width, 32%)) 10px minmax(0, 1fr);
+    gap: 7px;
     min-height: 320px;
+  }
+
+  #vault-grid.is-resizing,
+  #vault-grid.is-resizing * {
+    cursor: col-resize;
+    user-select: none;
+  }
+
+  #vault-resizer {
+    position: relative;
+    width: 10px;
+    min-height: 320px;
+    border: 1px solid rgba(83, 126, 116, 0.26);
+    border-radius: 999px;
+    background: rgba(5, 13, 12, 0.54);
+    cursor: col-resize;
+    padding: 0;
+  }
+
+  #vault-resizer::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 2px;
+    height: 46px;
+    border-radius: 999px;
+    background: rgba(139, 240, 188, 0.56);
+    transform: translate(-50%, -50%);
+  }
+
+  #vault-resizer:hover,
+  #vault-resizer:focus-visible,
+  #vault-resizer:active {
+    border-color: rgba(57, 217, 145, 0.64);
+    background: rgba(57, 217, 145, 0.12);
+    outline: none;
   }
 
   #vault-files {
@@ -1644,13 +1804,23 @@
       gap: 10px;
     }
 
+    body[data-layout-focus="terminal"] #layout {
+      grid-template-columns: 1fr;
+      grid-template-rows: minmax(500px, 68vh) minmax(300px, auto);
+    }
+
+    body[data-layout-focus="hud"] #layout {
+      grid-template-columns: 1fr;
+      grid-template-rows: minmax(220px, 30vh) minmax(560px, auto);
+    }
+
     #terminal-pane,
     #hud-pane {
       min-height: 0;
     }
 
     #hud-pane {
-      grid-template-rows: auto auto auto;
+      grid-template-rows: auto auto auto auto;
     }
 
     .tab-body {
@@ -1685,8 +1855,18 @@
 
     #connection-tip,
     #hud-message,
-    #hud-status-pill {
+    .operator-name,
+    .operator-online,
+    .operator-status-pill {
       white-space: normal;
+    }
+
+    #operators-panel {
+      width: 100%;
+    }
+
+    .operator-presence-row {
+      grid-template-columns: minmax(54px, auto) auto minmax(120px, 1fr);
     }
 
     .grid {
@@ -1704,6 +1884,10 @@
 
     #vault-grid {
       grid-template-columns: 1fr;
+    }
+
+    #vault-resizer {
+      display: none;
     }
 
     #vault-files,
@@ -1792,11 +1976,28 @@
       <div id="hud-sub">
         <span id="hud-clock">--:--:--</span>
         <div id="hud-sub-right">
-          <span id="hud-message">Immersive mode: active</span>
-          <span id="hud-status-pill" role="button" tabindex="0" title="Click to change status" hidden>Status: observing</span>
+          <div id="operators-panel" aria-label="Online operators">
+            <div id="operators-head">
+              <span>Operators</span>
+              <span id="hud-message">Live</span>
+            </div>
+            <div id="operators-list">
+              <div class="operator-presence-row">
+                <span class="operator-name">Trey</span>
+                <span class="operator-online">offline</span>
+                <span class="operator-status-pill">Status: observing</span>
+              </div>
+            </div>
+          </div>
           <button class="btn btn-tour" id="tour-open" data-testid="guide-open" title="Open guide">Guide</button>
         </div>
       </div>
+    </div>
+    <div id="focus-controls" aria-label="Layout focus controls">
+      <span class="focus-label">View</span>
+      <button class="focus-mode-btn active" type="button" data-layout-focus="split" aria-pressed="true">Split</button>
+      <button class="focus-mode-btn" type="button" data-layout-focus="terminal" aria-pressed="false">Console</button>
+      <button class="focus-mode-btn" type="button" data-layout-focus="hud" aria-pressed="false">Compound</button>
     </div>
     <div id="tabs">
       <button class="tab-btn active" data-tab="ops">Dashboard</button>
@@ -1913,6 +2114,17 @@
         <ul id="vault-files" data-testid="vault-files">
           <li>Loading vault...</li>
         </ul>
+        <button
+          id="vault-resizer"
+          type="button"
+          role="separator"
+          aria-label="Resize vault note list"
+          aria-orientation="vertical"
+          aria-valuemin="24"
+          aria-valuemax="55"
+          aria-valuenow="32"
+          title="Drag to resize the Vault panels. Use left and right arrows for keyboard control."
+        ></button>
         <article id="vault-preview" data-testid="vault-preview">
           <p>Select a vault note to preview it here.</p>
         </article>
@@ -2022,7 +2234,7 @@
   const connectionTextEl = document.getElementById("connection-text");
   const hudClockEl = document.getElementById("hud-clock");
   const hudMessageEl = document.getElementById("hud-message");
-  const hudStatusPillEl = document.getElementById("hud-status-pill");
+  const operatorsListEl = document.getElementById("operators-list");
 
   const metricOnlineEl = document.getElementById("metric-online");
   const metricInProgressEl = document.getElementById("metric-inprogress");
@@ -2050,6 +2262,9 @@
   const vaultMetaEl = document.getElementById("vault-meta");
   const vaultPreviewEl = document.getElementById("vault-preview");
   const vaultCopyPathEl = document.getElementById("vault-copy-path");
+  const vaultGridEl = document.getElementById("vault-grid");
+  const vaultResizerEl = document.getElementById("vault-resizer");
+  const layoutFocusButtons = Array.from(document.querySelectorAll("#focus-controls [data-layout-focus]"));
 
   const focusTimeEl = document.getElementById("focus-time");
   const focusBarEl = document.getElementById("focus-bar");
@@ -2107,6 +2322,10 @@
     vaultFiles: [],
     activeVaultPath: "",
     activeVaultMeta: null,
+    layoutFocus: "split",
+    vaultSplitPct: 32,
+    vaultResizeActive: false,
+    vaultResizePointerId: null,
     focusEndMs: null,
     focusInterval: null,
     commandHistory: [],
@@ -2131,7 +2350,9 @@
   const PROFILE_KEY = "compound_profile_v1";
   const SHOW_ONBOARDING_KEY = "compound_show_onboarding_v1";
   const VAULT_LAST_PATH_KEY = "compound_vault_last_path_v1";
-  const HUD_STORAGE_KEYS = [ONBOARDING_KEY, PROFILE_KEY, SHOW_ONBOARDING_KEY, VAULT_LAST_PATH_KEY];
+  const LAYOUT_FOCUS_KEY = "compound_layout_focus_v1";
+  const VAULT_SPLIT_KEY = "compound_vault_split_v1";
+  const HUD_STORAGE_KEYS = [ONBOARDING_KEY, PROFILE_KEY, SHOW_ONBOARDING_KEY, VAULT_LAST_PATH_KEY, LAYOUT_FOCUS_KEY, VAULT_SPLIT_KEY];
   const BOARD_COLUMNS = [
     { id: "raw", label: "Ideas", empty: "Capture rough thoughts here." },
     { id: "refined", label: "Plan", empty: "Shape the why, steps, and done check here." },
@@ -2204,6 +2425,59 @@
     } catch (_err) {
       // ignore environments that block storage
     }
+  }
+
+  function normalizeLayoutFocus(mode) {
+    return ["split", "terminal", "hud"].includes(mode) ? mode : "split";
+  }
+
+  function setLayoutFocus(mode, persist = true) {
+    const nextMode = normalizeLayoutFocus(mode);
+    state.layoutFocus = nextMode;
+    document.body.dataset.layoutFocus = nextMode;
+    layoutFocusButtons.forEach((button) => {
+      const active = button.dataset.layoutFocus === nextMode;
+      button.classList.toggle("active", active);
+      button.setAttribute("aria-pressed", active ? "true" : "false");
+    });
+    if (persist) {
+      storageSet(LAYOUT_FOCUS_KEY, nextMode);
+    }
+  }
+
+  function loadLayoutFocus() {
+    setLayoutFocus(storageGet(LAYOUT_FOCUS_KEY, "split"), false);
+  }
+
+  function clampVaultSplit(value) {
+    const numeric = Number(value);
+    if (!Number.isFinite(numeric)) {
+      return 32;
+    }
+    return Math.max(24, Math.min(55, numeric));
+  }
+
+  function setVaultSplit(value, persist = true) {
+    const nextPct = clampVaultSplit(value);
+    state.vaultSplitPct = nextPct;
+    vaultGridEl.style.setProperty("--vault-list-width", `${nextPct}%`);
+    vaultResizerEl.setAttribute("aria-valuenow", String(Math.round(nextPct)));
+    if (persist) {
+      storageSet(VAULT_SPLIT_KEY, String(Math.round(nextPct)));
+    }
+  }
+
+  function loadVaultSplit() {
+    setVaultSplit(storageGet(VAULT_SPLIT_KEY, "32"), false);
+  }
+
+  function setVaultSplitFromPointer(event) {
+    const rect = vaultGridEl.getBoundingClientRect();
+    if (!rect.width) {
+      return;
+    }
+    const pct = ((event.clientX - rect.left) / rect.width) * 100;
+    setVaultSplit(pct);
   }
 
   function resetHudStorageFromUrl() {
@@ -2362,17 +2636,58 @@
     return (currentPlayer()?.status || "observing").trim() || "observing";
   }
 
+  function renderOperatorRow(player, isCurrent) {
+    const name = escapeHtml(player.name || "Operator");
+    const status = escapeHtml((player.status || "observing").trim() || "observing");
+    const room = escapeHtml(player.room_path || player.room || "unknown");
+    const action = escapeHtml(player.last_action || "active");
+    const statusLabel = `Status: ${status}`;
+    const statusControl = isCurrent
+      ? `<button class="operator-status-pill" type="button" data-status-edit="self" title="Click to change status">${statusLabel}</button>`
+      : `<span class="operator-status-pill">${statusLabel}</span>`;
+
+    return `
+      <div class="operator-presence-row ${isCurrent ? "is-current" : ""}">
+        <span class="operator-name">${name}</span>
+        <span class="operator-online">online</span>
+        ${statusControl}
+        <span class="operator-room"><strong>Room</strong> ${room}</span>
+        <span class="operator-action"><strong>Last</strong> ${action}</span>
+      </div>
+    `;
+  }
+
   function renderHudPresence() {
     if (!state.login.connected) {
-      hudStatusPillEl.hidden = true;
+      hudMessageEl.textContent = "Offline";
+      operatorsListEl.innerHTML = `
+        <div class="operator-presence-row">
+          <span class="operator-name">${escapeHtml(state.login.profile || "Trey")}</span>
+          <span class="operator-online">offline</span>
+          <span class="operator-status-pill">Status: observing</span>
+          <span class="operator-room"><strong>Room</strong> offline</span>
+          <span class="operator-action"><strong>Last</strong> disconnected</span>
+        </div>
+      `;
       return;
     }
 
     const profile = state.login.profile || "Operator";
     const status = currentStatus();
-    hudMessageEl.textContent = `${profile} online`;
-    hudStatusPillEl.hidden = false;
-    hudStatusPillEl.textContent = `Status: ${status}`;
+    const players = state.players || [];
+    const sortedPlayers = [...players].sort((a, b) => {
+      const aCurrent = (a.name || "").toLowerCase() === profile.toLowerCase();
+      const bCurrent = (b.name || "").toLowerCase() === profile.toLowerCase();
+      if (aCurrent !== bCurrent) return aCurrent ? -1 : 1;
+      return (a.name || "").localeCompare(b.name || "");
+    });
+
+    hudMessageEl.textContent = `${players.length || 1} online`;
+    operatorsListEl.innerHTML = sortedPlayers.length
+      ? sortedPlayers
+        .map((player) => renderOperatorRow(player, (player.name || "").toLowerCase() === profile.toLowerCase()))
+        .join("")
+      : renderOperatorRow({ name: profile, status }, true);
 
     if (statusPanelEl.hidden) {
       statusInputEl.value = status === "observing" ? "" : status;
@@ -2393,8 +2708,11 @@
     const nextStatus = status.trim();
     if (!nextStatus) return;
     runCommand(`status ${nextStatus}`);
-    hudStatusPillEl.hidden = false;
-    hudStatusPillEl.textContent = `Status: ${nextStatus}`;
+    const player = currentPlayer();
+    if (player) {
+      player.status = nextStatus;
+    }
+    renderHudPresence();
     statusPanelEl.hidden = true;
   }
 
@@ -2411,7 +2729,9 @@
     onlineListEl.innerHTML = players
       .map((player) => {
         const status = escapeHtml(player.status || "observing");
-        return `<li class="operator-entry"><strong>${escapeHtml(player.name)}</strong><br><span class="mono-dim">${escapeHtml(player.room || "unknown")} | ${status}</span></li>`;
+        const room = escapeHtml(player.room_path || player.room || "unknown");
+        const action = escapeHtml(player.last_action || "active");
+        return `<li class="operator-entry"><strong>${escapeHtml(player.name)}</strong><br><span class="mono-dim">${room} | ${status}<br>Last: ${action}</span></li>`;
       })
       .join("");
     renderHudPresence();
@@ -3488,6 +3808,58 @@
     });
   }
 
+  function setupLayoutFocusControls() {
+    layoutFocusButtons.forEach((button) => {
+      button.addEventListener("click", () => setLayoutFocus(button.dataset.layoutFocus));
+    });
+  }
+
+  function endVaultResize() {
+    state.vaultResizeActive = false;
+    state.vaultResizePointerId = null;
+    vaultGridEl.classList.remove("is-resizing");
+  }
+
+  function setupVaultResize() {
+    vaultResizerEl.addEventListener("pointerdown", (event) => {
+      event.preventDefault();
+      state.vaultResizeActive = true;
+      state.vaultResizePointerId = event.pointerId;
+      vaultGridEl.classList.add("is-resizing");
+      vaultResizerEl.setPointerCapture?.(event.pointerId);
+      setVaultSplitFromPointer(event);
+    });
+
+    vaultResizerEl.addEventListener("pointermove", (event) => {
+      if (!state.vaultResizeActive || state.vaultResizePointerId !== event.pointerId) {
+        return;
+      }
+      setVaultSplitFromPointer(event);
+    });
+
+    vaultResizerEl.addEventListener("pointerup", endVaultResize);
+    vaultResizerEl.addEventListener("pointercancel", endVaultResize);
+    vaultResizerEl.addEventListener("lostpointercapture", endVaultResize);
+    vaultResizerEl.addEventListener("dblclick", () => setVaultSplit(32));
+
+    vaultResizerEl.addEventListener("keydown", (event) => {
+      const step = event.shiftKey ? 8 : 3;
+      if (event.key === "ArrowLeft") {
+        event.preventDefault();
+        setVaultSplit(state.vaultSplitPct - step);
+      } else if (event.key === "ArrowRight") {
+        event.preventDefault();
+        setVaultSplit(state.vaultSplitPct + step);
+      } else if (event.key === "Home") {
+        event.preventDefault();
+        setVaultSplit(24);
+      } else if (event.key === "End") {
+        event.preventDefault();
+        setVaultSplit(55);
+      }
+    });
+  }
+
   function connect() {
     if (state.ws && (state.ws.readyState === WebSocket.OPEN || state.ws.readyState === WebSocket.CONNECTING)) {
       return;
@@ -3572,7 +3944,6 @@
       state.players = [];
       state.login.connected = false;
       state.login.nameSent = false;
-      hudStatusPillEl.hidden = true;
       renderPlayers();
     };
 
@@ -3648,8 +4019,15 @@
       }
     });
 
-    hudStatusPillEl.addEventListener("click", toggleStatusPanel);
-    hudStatusPillEl.addEventListener("keydown", (event) => {
+    operatorsListEl.addEventListener("click", (event) => {
+      const statusButton = event.target.closest("[data-status-edit]");
+      if (!statusButton) return;
+      toggleStatusPanel();
+    });
+
+    operatorsListEl.addEventListener("keydown", (event) => {
+      const statusButton = event.target.closest("[data-status-edit]");
+      if (!statusButton) return;
       if (event.key !== "Enter" && event.key !== " ") return;
       event.preventDefault();
       toggleStatusPanel();
@@ -3846,7 +4224,11 @@
   function bootstrap() {
     resetHudStorageFromUrl();
     loadLoginPreferences();
+    loadLayoutFocus();
+    loadVaultSplit();
     setupTabs();
+    setupLayoutFocusControls();
+    setupVaultResize();
     attachEvents();
     connect();
     tickClock();

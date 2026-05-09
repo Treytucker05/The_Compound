@@ -696,19 +696,77 @@ async def send_prompt(ws, player: Player):
     await ws.send(f"PROMPT:{player.prompt()}")
 
 
+def room_path_label(player: Player, vault_root: Path | None = None) -> str:
+    if not player.room:
+        return "unknown"
+    root = vault_root or VAULT_DIR
+    try:
+        rel = player.room.path.relative_to(root)
+    except ValueError:
+        return player.room.name or "unknown"
+    return rel.as_posix() or "The Compound"
+
+
+def summarize_presence_action(raw: str, player: Player, previous_room_id: str | None = None) -> str:
+    parts = raw.strip().split(None, 1)
+    cmd = parts[0].lower() if parts else ""
+    args = parts[1].strip() if len(parts) > 1 else ""
+
+    if cmd == "login":
+        return "entered the Compound"
+    if cmd == "status":
+        return f"status: {player.status}"
+    if cmd in ("n", "s", "e", "w", "u", "d", "ne", "nw", "se", "sw", "north", "south", "east", "west", "up", "down", "northeast", "northwest", "southeast", "southwest", "cd", "go", "warp"):
+        current_room_id = player.room.id if player.room else ""
+        if previous_room_id is not None and current_room_id == previous_room_id:
+            return "tried to move"
+        return f"moved to {room_path_label(player)}"
+    if cmd == "working":
+        return f"working on {args[3:].strip() or 'a task'}"[:80]
+    if cmd == "done":
+        return "logged a completion"
+    if cmd == "add":
+        return "added a board card"
+    if cmd in ("board", "next"):
+        return "checked the board"
+    if cmd in ("ask", "reply", "resolve", "inbox", "radio"):
+        return "used radio"
+    if cmd == "say":
+        return "spoke in room"
+    if cmd == "tell":
+        return "sent a tell"
+    if cmd in ("look", "ls", "dir", "l"):
+        return f"looked at {room_path_label(player)}"
+    if cmd in ("cat", "read", "less"):
+        return "read a vault note"
+    if cmd == "note":
+        return "pinned a room note"
+    return f"ran {cmd}" if cmd else "active"
+
+
+def record_presence_action(player: Player, raw: str, previous_room_id: str | None = None):
+    player.last_action = summarize_presence_action(raw, player, previous_room_id)
+    player.last_action_at = datetime.now(timezone.utc).isoformat()
+
+
+def presence_entry(player: Player, vault_root: Path | None = None) -> dict:
+    return {
+        "name": player.name,
+        "room": player.room.name if player.room else "unknown",
+        "room_id": player.room.id if player.room else "",
+        "room_path": room_path_label(player, vault_root),
+        "status": player.status,
+        "last_action": getattr(player, "last_action", "active"),
+        "last_action_at": getattr(player, "last_action_at", ""),
+    }
+
+
 async def broadcast_state():
     """Send a lightweight state snapshot to connected clients."""
     runtime_world = require_world()
     state = []
     for player in list(runtime_world.players.values()):
-        state.append(
-            {
-                "name": player.name,
-                "room": player.room.name if player.room else "unknown",
-                "room_id": player.room.id if player.room else "",
-                "status": player.status,
-            }
-        )
+        state.append(presence_entry(player))
 
     payload = f"STATE:{json.dumps(state)}"
     for ws_conn in list(connected_players.keys()):
@@ -765,6 +823,7 @@ async def mud_handler(websocket):
     runtime_world.add_player(player)
     connected_players[websocket] = player
 
+    record_presence_action(player, "login")
     log_event("login", player.name, {"ip": websocket.remote_address[0] if websocket.remote_address else None})
     board_view = handle(player, runtime_world, "board")
     await websocket.send(
@@ -792,7 +851,9 @@ async def mud_handler(websocket):
                 continue
 
             log_event("command", player.name, {"raw": raw, "room": player.room.id if player.room else None})
+            previous_room_id = player.room.id if player.room else ""
             result = handle(player, runtime_world, raw)
+            record_presence_action(player, raw, previous_room_id)
 
             if result == "__QUIT__":
                 await websocket.send("Disconnected from The Compound.")
