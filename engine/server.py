@@ -8,6 +8,7 @@ Also serves small JSON endpoints for the portal HUD.
 from __future__ import annotations
 
 import asyncio
+import copy
 import json
 import os
 import sys
@@ -20,9 +21,11 @@ from websockets.asyncio.server import serve
 
 sys.path.insert(0, str(Path(__file__).parent))
 
+from board import COLUMNS, add_item, load_board, save_board, utc_now
 from commands import handle
 from quickstart import ensure_quickstart
 from radio import load_radio, summarize_radio
+from vault_sync import sync as vault_sync
 from world import ROOT_PATH, Player, World
 
 ROOT_DIR = Path(__file__).parent.parent
@@ -39,6 +42,47 @@ EVENT_LOG = LOG_DIR / "events.jsonl"
 QUICKSTART_STATUS: dict = {}
 world: World | None = None
 connected_players: dict = {}
+
+STAGE_LABELS = {
+    "raw": "Ideas",
+    "refined": "Plans",
+    "planned": "Ready",
+    "in_progress": "Doing",
+    "done": "Done",
+}
+
+STAGE_RULES = {
+    "raw": {
+        "label": "Ideas",
+        "next": "Plans",
+        "missing": ("why",),
+        "message": "Add a why/use note before planning.",
+    },
+    "refined": {
+        "label": "Plans",
+        "next": "Ready",
+        "missing": ("why", "steps", "acceptance"),
+        "message": "Add why/use, steps, and an acceptance check before ready.",
+    },
+    "planned": {
+        "label": "Ready",
+        "next": "Doing",
+        "missing": ("why", "steps", "acceptance"),
+        "message": "Ready to start once the plan basics are filled in.",
+    },
+    "in_progress": {
+        "label": "Doing",
+        "next": "Done",
+        "missing": (),
+        "message": "Actively owned work.",
+    },
+    "done": {
+        "label": "Done",
+        "next": "",
+        "missing": (),
+        "message": "Completed work.",
+    },
+}
 
 
 def require_world() -> World:
@@ -77,6 +121,212 @@ def load_board_snapshot() -> dict:
         return json.loads(BOARD_PATH.read_text(encoding="utf-8"))
     except Exception:
         return {}
+
+
+def query_value(query: dict, key: str, default: str = "") -> str:
+    return unquote(query.get(key, [default])[0] or default).strip()
+
+
+def query_bool(query: dict, key: str, default: bool = False) -> bool:
+    raw = query_value(query, key, "1" if default else "0").lower()
+    return raw in ("1", "true", "yes", "on")
+
+
+def board_column_label(column: str) -> str:
+    return STAGE_LABELS.get(column, column.replace("_", " "))
+
+
+def gate_status_for_item(item: dict, column: str) -> dict:
+    rule = STAGE_RULES.get(column, {})
+    required = rule.get("missing", ())
+    missing = [field for field in required if not str(item.get(field, "")).strip()]
+    return {
+        "state": "needs_info" if missing else "ready",
+        "missing": missing,
+        "message": rule.get("message", ""),
+        "next": rule.get("next", ""),
+    }
+
+
+def board_payload(board: dict | None = None) -> dict:
+    board = copy.deepcopy(board or load_board(BOARD_PATH))
+    for column in COLUMNS:
+        for item in board.get("columns", {}).get(column, []):
+            item["gate_status"] = gate_status_for_item(item, column)
+    return {"board": board, "pulse": build_pulse_payload(), "stage_rules": STAGE_RULES}
+
+
+def board_actor(query: dict) -> str:
+    return query_value(query, "actor", "portal")[:32] or "portal"
+
+
+def find_board_item(board: dict, item_id: str) -> tuple[str, int, dict] | None:
+    for column in COLUMNS:
+        for index, item in enumerate(board.get("columns", {}).get(column, [])):
+            if item.get("id") == item_id:
+                return column, index, item
+    return None
+
+
+def record_board_news(board: dict, text: str):
+    board.setdefault("new", []).append({"timestamp": utc_now(), "text": text})
+    board["new"] = board["new"][-25:]
+
+
+def sync_board_vault():
+    try:
+        vault_sync(ROOT_DIR)
+    except TypeError:
+        try:
+            vault_sync()
+        except Exception:
+            pass
+    except Exception:
+        pass
+
+
+def api_add_board_item(query: dict) -> tuple[int, dict]:
+    title = query_value(query, "title")
+    if not title:
+        return 400, {"error": "Missing title."}
+
+    actor = board_actor(query)
+    board, item = add_item(BOARD_PATH, title[:180], actor)
+    target_column = query_value(query, "column", "raw")
+    if target_column in COLUMNS and target_column != "raw":
+        board["columns"]["raw"].remove(item)
+        board["columns"][target_column].append(item)
+        record_board_news(board, f"{actor} moved: {item['title']} -> {board_column_label(target_column)}")
+        save_board(BOARD_PATH, board)
+
+    log_board_event("task_added_ui", actor, {"item": item})
+    sync_board_vault()
+    return 200, board_payload(board)
+
+
+def api_update_board_item(query: dict) -> tuple[int, dict]:
+    item_id = query_value(query, "id")
+    if not item_id:
+        return 400, {"error": "Missing id."}
+
+    board = load_board(BOARD_PATH)
+    found = find_board_item(board, item_id)
+    if not found:
+        return 404, {"error": "Board item not found."}
+
+    column, _index, item = found
+    actor = board_actor(query)
+    title = query_value(query, "title")
+    owner = query_value(query, "owner")
+    mode = query_value(query, "mode")
+    completion_note = query_value(query, "completion_note")
+    why = query_value(query, "why")
+    steps = query_value(query, "steps")
+    acceptance = query_value(query, "acceptance")
+
+    changed = []
+    if title and title != item.get("title"):
+        item["title"] = title[:180]
+        changed.append("title")
+    if "owner" in query:
+        item["owner"] = owner or None
+        changed.append("owner")
+    if mode in ("SOLO", "SHARED"):
+        item["mode"] = mode
+        changed.append("mode")
+    if "priority" in query:
+        item["priority"] = query_bool(query, "priority")
+        changed.append("priority")
+    if "completion_note" in query:
+        item["completion_note"] = completion_note
+        changed.append("completion_note")
+    if "why" in query:
+        item["why"] = why[:500]
+        changed.append("why")
+    if "steps" in query:
+        item["steps"] = steps[:900]
+        changed.append("steps")
+    if "acceptance" in query:
+        item["acceptance"] = acceptance[:500]
+        changed.append("acceptance")
+
+    if changed:
+        item["updated_at"] = utc_now()
+        record_board_news(board, f"{actor} updated: {item.get('title', 'untitled')}")
+        save_board(BOARD_PATH, board)
+        log_board_event("task_updated_ui", actor, {"item": item, "column": column, "changed": changed})
+        sync_board_vault()
+
+    return 200, board_payload(board)
+
+
+def api_move_board_item(query: dict) -> tuple[int, dict]:
+    item_id = query_value(query, "id")
+    target_column = query_value(query, "column")
+    if not item_id or target_column not in COLUMNS:
+        return 400, {"error": "Missing id or invalid column."}
+
+    board = load_board(BOARD_PATH)
+    found = find_board_item(board, item_id)
+    if not found:
+        return 404, {"error": "Board item not found."}
+
+    source_column, _old_index, item = found
+    actor = board_actor(query)
+    raw_index = query_value(query, "index", "")
+    try:
+        target_index = int(raw_index)
+    except ValueError:
+        target_index = len(board["columns"].get(target_column, []))
+
+    board["columns"][source_column].remove(item)
+    target_items = board["columns"][target_column]
+    target_index = max(0, min(target_index, len(target_items)))
+
+    item["updated_at"] = utc_now()
+    if target_column == "in_progress":
+        item["owner"] = actor
+        item["started_at"] = item.get("started_at") or utc_now()
+        item.pop("completed_at", None)
+        item.pop("completed_by", None)
+        item.pop("completion_note", None)
+    elif target_column == "done":
+        item["completed_at"] = item.get("completed_at") or utc_now()
+        item["completed_by"] = actor
+        note = query_value(query, "completion_note")
+        if note:
+            item["completion_note"] = note[:240]
+    else:
+        item.pop("completed_at", None)
+        item.pop("completed_by", None)
+        item.pop("completion_note", None)
+
+    target_items.insert(target_index, item)
+    record_board_news(board, f"{actor} moved: {item.get('title', 'untitled')} -> {board_column_label(target_column)}")
+    save_board(BOARD_PATH, board)
+    log_board_event("task_moved_ui", actor, {"item": item, "from": source_column, "to": target_column})
+    sync_board_vault()
+    return 200, board_payload(board)
+
+
+def api_delete_board_item(query: dict) -> tuple[int, dict]:
+    item_id = query_value(query, "id")
+    if not item_id:
+        return 400, {"error": "Missing id."}
+
+    board = load_board(BOARD_PATH)
+    found = find_board_item(board, item_id)
+    if not found:
+        return 404, {"error": "Board item not found."}
+
+    column, _index, item = found
+    actor = board_actor(query)
+    board["columns"][column].remove(item)
+    record_board_news(board, f"{actor} deleted: {item.get('title', 'untitled')}")
+    save_board(BOARD_PATH, board)
+    log_board_event("task_deleted_ui", actor, {"item": item, "from": column})
+    sync_board_vault()
+    return 200, board_payload(board)
 
 
 def read_event_tail(limit: int = 30) -> list[dict]:
@@ -420,8 +670,40 @@ async def process_request(connection, request):
             response.headers["Content-Type"] = "text/html; charset=utf-8"
             return response
 
+    if path == "/favicon.ico":
+        response = connection.respond(204, "")
+        response.headers["Content-Type"] = "image/x-icon"
+        return response
+
     if path == "/api/pulse":
         return json_response(connection, 200, build_pulse_payload())
+
+    if path == "/api/board":
+        return json_response(connection, 200, board_payload())
+
+    if path == "/api/board/add":
+        status, payload = api_add_board_item(query)
+        if status == 200:
+            await broadcast_pulse()
+        return json_response(connection, status, payload)
+
+    if path == "/api/board/update":
+        status, payload = api_update_board_item(query)
+        if status == 200:
+            await broadcast_pulse()
+        return json_response(connection, status, payload)
+
+    if path == "/api/board/move":
+        status, payload = api_move_board_item(query)
+        if status == 200:
+            await broadcast_pulse()
+        return json_response(connection, status, payload)
+
+    if path == "/api/board/delete":
+        status, payload = api_delete_board_item(query)
+        if status == 200:
+            await broadcast_pulse()
+        return json_response(connection, status, payload)
 
     if path == "/api/vault/index":
         return json_response(connection, 200, {"files": build_vault_index()})

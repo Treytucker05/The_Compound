@@ -197,6 +197,40 @@
     color: var(--good);
   }
 
+  #status-panel {
+    margin-top: 8px;
+    display: grid;
+    grid-template-columns: minmax(180px, 1fr) auto;
+    gap: 7px;
+    max-width: 560px;
+  }
+
+  #status-panel[hidden] {
+    display: none;
+  }
+
+  #status-input {
+    min-width: 0;
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    background: rgba(5, 13, 12, 0.9);
+    color: var(--text);
+    padding: 8px 9px;
+    font-size: 12px;
+    outline: none;
+  }
+
+  #status-input::placeholder {
+    color: rgba(143, 177, 170, 0.72);
+  }
+
+  #status-presets {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
   #output {
     overflow-y: auto;
     padding: 15px 16px;
@@ -344,6 +378,21 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+
+  #hud-status-pill {
+    border: 1px solid rgba(57, 217, 145, 0.28);
+    border-radius: 999px;
+    background: rgba(57, 217, 145, 0.08);
+    color: var(--good);
+    padding: 3px 7px;
+    font-size: 10px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  #hud-status-pill[hidden] {
+    display: none;
   }
 
   #tabs {
@@ -781,6 +830,322 @@
     line-height: 1.45;
   }
 
+  #board-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 130;
+    display: grid;
+    place-items: center;
+    background: rgba(2, 6, 5, 0.76);
+    backdrop-filter: blur(10px);
+    padding: 16px;
+  }
+
+  #board-overlay[hidden] {
+    display: none;
+  }
+
+  #board-shell {
+    width: min(1240px, calc(100vw - 32px));
+    height: min(760px, calc(100vh - 32px));
+    display: grid;
+    grid-template-rows: auto auto 1fr;
+    border: 1px solid var(--line-strong);
+    border-radius: 8px;
+    background:
+      linear-gradient(180deg, rgba(18, 40, 36, 0.98), rgba(5, 13, 12, 0.98)),
+      var(--bg-panel);
+    box-shadow: 0 26px 64px rgba(0, 0, 0, 0.55);
+    overflow: hidden;
+  }
+
+  #board-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--line);
+    background: rgba(57, 217, 145, 0.08);
+  }
+
+  #board-head h2 {
+    color: var(--accent);
+    font-size: 20px;
+    line-height: 1.1;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  #board-status {
+    margin-top: 5px;
+    color: var(--text-dim);
+    font-size: 11px;
+  }
+
+  #board-add-form {
+    display: grid;
+    grid-template-columns: minmax(220px, 1fr) auto;
+    gap: 8px;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--line);
+    background: rgba(5, 13, 12, 0.7);
+  }
+
+  #board-title-input {
+    min-width: 0;
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    background: rgba(5, 13, 12, 0.94);
+    color: var(--text);
+    padding: 9px 10px;
+    font-size: 12px;
+    outline: none;
+  }
+
+  #board-title-input::placeholder {
+    color: rgba(143, 177, 170, 0.72);
+  }
+
+  #board-columns {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(180px, 1fr));
+    gap: 10px;
+    padding: 12px;
+    overflow: auto;
+  }
+
+  .board-column {
+    min-width: 0;
+    display: grid;
+    grid-template-rows: auto 1fr;
+    border: 1px solid rgba(83, 126, 116, 0.3);
+    border-radius: 8px;
+    background: rgba(5, 13, 12, 0.66);
+    overflow: hidden;
+  }
+
+  .board-column[data-column="raw"] {
+    border-color: rgba(125, 211, 252, 0.4);
+  }
+
+  .board-column[data-column="refined"] {
+    border-color: rgba(251, 191, 36, 0.42);
+  }
+
+  .board-column[data-column="planned"] {
+    border-color: rgba(196, 181, 253, 0.42);
+  }
+
+  .board-column[data-column="in_progress"] {
+    border-color: rgba(134, 239, 172, 0.42);
+  }
+
+  .board-column[data-column="done"] {
+    border-color: rgba(209, 213, 219, 0.34);
+  }
+
+  .board-column-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 10px;
+    border-bottom: 1px solid var(--line);
+    color: var(--text-soft);
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  .board-column[data-column="raw"] .board-column-head {
+    background: rgba(14, 165, 233, 0.12);
+    color: #b7e7ff;
+  }
+
+  .board-column[data-column="refined"] .board-column-head {
+    background: rgba(245, 158, 11, 0.13);
+    color: #fde68a;
+  }
+
+  .board-column[data-column="planned"] .board-column-head {
+    background: rgba(139, 92, 246, 0.13);
+    color: #ddd6fe;
+  }
+
+  .board-column[data-column="in_progress"] .board-column-head {
+    background: rgba(34, 197, 94, 0.12);
+    color: #bbf7d0;
+  }
+
+  .board-column[data-column="done"] .board-column-head {
+    background: rgba(148, 163, 184, 0.1);
+    color: #e5e7eb;
+  }
+
+  .board-count {
+    color: var(--accent-2);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .board-column-body {
+    min-height: 280px;
+    overflow: auto;
+    display: grid;
+    align-content: start;
+    gap: 8px;
+    padding: 9px;
+    transition: background 0.16s ease, box-shadow 0.16s ease;
+  }
+
+  .board-column-body.drag-over {
+    background: rgba(57, 217, 145, 0.08);
+    box-shadow: inset 0 0 0 1px rgba(57, 217, 145, 0.38);
+  }
+
+  .board-empty {
+    border: 1px dashed rgba(83, 126, 116, 0.32);
+    border-radius: 7px;
+    color: rgba(143, 177, 170, 0.72);
+    font-size: 11px;
+    padding: 10px;
+  }
+
+  .board-task {
+    border: 1px solid rgba(83, 126, 116, 0.34);
+    border-radius: 7px;
+    background:
+      linear-gradient(180deg, rgba(17, 36, 32, 0.88), rgba(6, 15, 13, 0.92));
+    padding: 9px;
+    cursor: grab;
+  }
+
+  .board-task.stage-raw {
+    border-left: 3px solid #38bdf8;
+  }
+
+  .board-task.stage-refined {
+    border-left: 3px solid #f59e0b;
+  }
+
+  .board-task.stage-planned {
+    border-left: 3px solid #a78bfa;
+  }
+
+  .board-task.stage-in_progress {
+    border-left: 3px solid #4ade80;
+  }
+
+  .board-task.stage-done {
+    border-left: 3px solid #cbd5e1;
+    opacity: 0.9;
+  }
+
+  .board-task:active {
+    cursor: grabbing;
+  }
+
+  .board-task.dragging {
+    opacity: 0.52;
+  }
+
+  .board-task-title {
+    min-height: 18px;
+    color: var(--text);
+    font-size: 12px;
+    line-height: 1.45;
+    outline: none;
+  }
+
+  .board-task-title:focus {
+    color: var(--good);
+  }
+
+  .board-task-meta {
+    margin-top: 7px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    color: var(--text-dim);
+    font-size: 10px;
+  }
+
+  .board-gate {
+    margin-top: 7px;
+    color: var(--text-dim);
+    font-size: 10px;
+    line-height: 1.35;
+  }
+
+  .board-gate.needs-info {
+    color: #fde68a;
+  }
+
+  .board-detail-grid {
+    display: grid;
+    gap: 6px;
+    margin-top: 8px;
+  }
+
+  .board-detail-input {
+    width: 100%;
+    min-height: 28px;
+    resize: vertical;
+    border: 1px solid rgba(83, 126, 116, 0.32);
+    border-radius: 6px;
+    background: rgba(2, 8, 7, 0.72);
+    color: var(--text);
+    padding: 6px 7px;
+    font-family: inherit;
+    font-size: 10px;
+    line-height: 1.35;
+    outline: none;
+  }
+
+  .board-detail-input:focus {
+    border-color: rgba(57, 217, 145, 0.58);
+  }
+
+  .board-detail-input::placeholder {
+    color: rgba(143, 177, 170, 0.68);
+  }
+
+  .board-pill {
+    border: 1px solid rgba(83, 126, 116, 0.3);
+    border-radius: 999px;
+    padding: 2px 6px;
+    background: rgba(0, 0, 0, 0.18);
+  }
+
+  .board-task-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 8px;
+  }
+
+  .board-mini-btn {
+    border: 1px solid rgba(83, 126, 116, 0.34);
+    border-radius: 6px;
+    background: rgba(5, 13, 12, 0.86);
+    color: var(--text-soft);
+    cursor: pointer;
+    font-size: 10px;
+    font-weight: 800;
+    padding: 5px 7px;
+  }
+
+  .board-mini-btn:hover {
+    border-color: var(--accent);
+    color: var(--good);
+  }
+
+  .board-mini-btn.danger:hover {
+    border-color: #f87171;
+    color: #fecaca;
+  }
+
   #onboarding-overlay {
     position: fixed;
     inset: 0;
@@ -922,6 +1287,14 @@
     .tab-body {
       overflow: visible;
     }
+
+    #board-shell {
+      height: min(780px, calc(100vh - 24px));
+    }
+
+    #board-columns {
+      grid-template-columns: repeat(5, minmax(210px, 1fr));
+    }
   }
 
   @media (max-width: 700px) {
@@ -942,7 +1315,8 @@
     }
 
     #connection-tip,
-    #hud-message {
+    #hud-message,
+    #hud-status-pill {
       white-space: normal;
     }
 
@@ -966,6 +1340,29 @@
     .tab-btn {
       padding-inline: 7px;
     }
+
+    #board-overlay {
+      padding: 8px;
+      align-items: start;
+    }
+
+    #board-shell {
+      width: calc(100vw - 16px);
+      height: calc(100vh - 16px);
+    }
+
+    #board-head {
+      flex-direction: column;
+    }
+
+    #board-add-form {
+      grid-template-columns: 1fr;
+      padding: 10px;
+    }
+
+    #board-columns {
+      grid-template-columns: 1fr;
+    }
   }
 </style>
 </head>
@@ -973,14 +1370,25 @@
 <div id="layout">
   <section id="terminal-pane" class="panel">
     <div id="terminal-head">
-      <div id="terminal-title">Witness Interface</div>
+      <div id="terminal-title">Compound Console</div>
       <div id="quick-commands">
-        <button class="chip" data-cmd="board">board</button>
-        <button class="chip" data-cmd="projects">projects</button>
-        <button class="chip" data-cmd="who">who</button>
-        <button class="chip" data-cmd="help">help</button>
-        <button class="chip" data-cmd="status building">status building</button>
+        <button class="chip" data-open="board">Board</button>
+        <button class="chip" data-cmd="projects">Project Map</button>
+        <button class="chip" data-cmd="who">Online</button>
+        <button class="chip" data-cmd="help">Commands</button>
+        <button class="chip" data-open="status" id="status-toggle">Set Status</button>
       </div>
+      <form id="status-panel" hidden>
+        <input id="status-input" type="text" autocomplete="off" placeholder="Type your status...">
+        <button class="btn" type="submit">Apply</button>
+        <div id="status-presets">
+          <button class="chip" type="button" data-status="building">Building</button>
+          <button class="chip" type="button" data-status="planning">Planning</button>
+          <button class="chip" type="button" data-status="focused">Focused</button>
+          <button class="chip" type="button" data-status="reviewing">Reviewing</button>
+          <button class="chip" type="button" data-status="observing">Observing</button>
+        </div>
+      </form>
     </div>
     <div id="output" data-testid="terminal-output"></div>
     <div id="input-row">
@@ -1000,6 +1408,7 @@
         <span id="hud-clock">--:--:--</span>
         <div id="hud-sub-right">
           <span id="hud-message">Immersive mode: active</span>
+          <span id="hud-status-pill" hidden>Status: observing</span>
           <button class="btn btn-tour" id="tour-open" data-testid="guide-open">Guide Me</button>
         </div>
       </div>
@@ -1111,6 +1520,23 @@
   </aside>
 </div>
 
+<div id="board-overlay" data-testid="board-overlay" hidden>
+  <div id="board-shell">
+    <div id="board-head">
+      <div>
+        <h2>Board</h2>
+        <div id="board-status">Loading board...</div>
+      </div>
+      <button class="btn" id="board-close" type="button">Close</button>
+    </div>
+    <form id="board-add-form">
+      <input id="board-title-input" type="text" autocomplete="off" placeholder="Add a task to New...">
+      <button class="btn" type="submit">Add Task</button>
+    </form>
+    <div id="board-columns"></div>
+  </div>
+</div>
+
 <div id="login-overlay" data-testid="login-overlay">
   <div id="login-card">
     <div id="login-kicker">The Compound</div>
@@ -1161,6 +1587,7 @@
   const connectionTextEl = document.getElementById("connection-text");
   const hudClockEl = document.getElementById("hud-clock");
   const hudMessageEl = document.getElementById("hud-message");
+  const hudStatusPillEl = document.getElementById("hud-status-pill");
 
   const metricOnlineEl = document.getElementById("metric-online");
   const metricInProgressEl = document.getElementById("metric-inprogress");
@@ -1185,6 +1612,17 @@
   const focusStartEl = document.getElementById("focus-start");
   const focusResetEl = document.getElementById("focus-reset");
   const tourOpenEl = document.getElementById("tour-open");
+  const statusToggleEl = document.getElementById("status-toggle");
+  const statusPanelEl = document.getElementById("status-panel");
+  const statusInputEl = document.getElementById("status-input");
+  const statusPresetEls = Array.from(document.querySelectorAll("[data-status]"));
+
+  const boardOverlayEl = document.getElementById("board-overlay");
+  const boardCloseEl = document.getElementById("board-close");
+  const boardStatusEl = document.getElementById("board-status");
+  const boardAddFormEl = document.getElementById("board-add-form");
+  const boardTitleInputEl = document.getElementById("board-title-input");
+  const boardColumnsEl = document.getElementById("board-columns");
 
   const loginOverlayEl = document.getElementById("login-overlay");
   const loginOnboardingEl = document.getElementById("login-onboarding");
@@ -1210,6 +1648,8 @@
     players: [],
     dir: null,
     pulse: null,
+    board: null,
+    boardDraggingId: "",
     vaultFiles: [],
     activeVaultPath: "",
     focusEndMs: null,
@@ -1236,6 +1676,18 @@
   const PROFILE_KEY = "compound_profile_v1";
   const SHOW_ONBOARDING_KEY = "compound_show_onboarding_v1";
   const HUD_STORAGE_KEYS = [ONBOARDING_KEY, PROFILE_KEY, SHOW_ONBOARDING_KEY];
+  const BOARD_COLUMNS = [
+    { id: "raw", label: "Ideas", empty: "Capture rough thoughts here." },
+    { id: "refined", label: "Plans", empty: "Ideas become shaped plans here." },
+    { id: "planned", label: "Ready", empty: "Ready-to-implement work waits here." },
+    { id: "in_progress", label: "Doing", empty: "Active owned work goes here." },
+    { id: "done", label: "Done", empty: "Completed work lands here." }
+  ];
+  const BOARD_FIELD_LABELS = {
+    why: "why/use",
+    steps: "steps",
+    acceptance: "done check"
+  };
 
   function storageGet(key, fallback = "") {
     try {
@@ -1396,12 +1848,58 @@
     renderOnboarding();
   }
 
+  function currentPlayer() {
+    const profile = (state.login.profile || "").toLowerCase();
+    return (state.players || []).find((player) => (player.name || "").toLowerCase() === profile) || null;
+  }
+
+  function currentStatus() {
+    return (currentPlayer()?.status || "observing").trim() || "observing";
+  }
+
+  function renderHudPresence() {
+    if (!state.login.connected) {
+      hudStatusPillEl.hidden = true;
+      return;
+    }
+
+    const profile = state.login.profile || "Operator";
+    const status = currentStatus();
+    hudMessageEl.textContent = `${profile} online`;
+    hudStatusPillEl.hidden = false;
+    hudStatusPillEl.textContent = `Status: ${status}`;
+
+    if (statusPanelEl.hidden) {
+      statusInputEl.value = status === "observing" ? "" : status;
+    }
+  }
+
+  function toggleStatusPanel() {
+    statusPanelEl.hidden = !statusPanelEl.hidden;
+    if (!statusPanelEl.hidden) {
+      const status = currentStatus();
+      statusInputEl.value = status === "observing" ? "" : status;
+      statusInputEl.focus();
+      statusInputEl.select();
+    }
+  }
+
+  function setOperatorStatus(status) {
+    const nextStatus = status.trim();
+    if (!nextStatus) return;
+    runCommand(`status ${nextStatus}`);
+    hudStatusPillEl.hidden = false;
+    hudStatusPillEl.textContent = `Status: ${nextStatus}`;
+    statusPanelEl.hidden = true;
+  }
+
   function renderPlayers() {
     const players = state.players || [];
     metricOnlineEl.textContent = String(players.length);
 
     if (!players.length) {
       onlineListEl.innerHTML = "<li>No one connected.</li>";
+      renderHudPresence();
       return;
     }
 
@@ -1411,6 +1909,7 @@
         return `<li class="operator-entry"><strong>${escapeHtml(player.name)}</strong><br><span class="mono-dim">${escapeHtml(player.room || "unknown")} | ${status}</span></li>`;
       })
       .join("");
+    renderHudPresence();
   }
 
   function renderDirectory() {
@@ -1478,6 +1977,209 @@
     }
     feedListEl.innerHTML = feed.length ? feed.join("") : "<li>No activity yet.</li>";
     renderOnboarding();
+  }
+
+  function boardActor() {
+    return state.login.profile || storageGet(PROFILE_KEY, "portal") || "portal";
+  }
+
+  function boardColumnLabel(columnId) {
+    const match = BOARD_COLUMNS.find((column) => column.id === columnId);
+    return match ? match.label : columnId;
+  }
+
+  function boardUrl(path, params = {}) {
+    const url = new URL(path, window.location.origin);
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== "") {
+        url.searchParams.set(key, value);
+      }
+    });
+    url.searchParams.set("actor", boardActor());
+    return url.toString();
+  }
+
+  function setBoardStatus(text) {
+    boardStatusEl.textContent = text || "";
+  }
+
+  function applyBoardPayload(payload) {
+    state.board = payload.board || payload;
+    if (payload.pulse) {
+      state.pulse = payload.pulse;
+      renderPulse();
+    }
+    renderBoard();
+  }
+
+  async function boardRequest(path, params = {}) {
+    const response = await fetch(boardUrl(path, params), { cache: "no-store" });
+    const payload = await response.json();
+    if (!response.ok) {
+      throw new Error(payload.error || "Board request failed.");
+    }
+    applyBoardPayload(payload);
+    return payload;
+  }
+
+  async function fetchBoard() {
+    try {
+      setBoardStatus("Loading board...");
+      const response = await fetch("/api/board", { cache: "no-store" });
+      const payload = await response.json();
+      if (!response.ok) {
+        throw new Error(payload.error || "Board unavailable.");
+      }
+      applyBoardPayload(payload);
+    } catch (err) {
+      setBoardStatus(err.message || "Board unavailable.");
+      boardColumnsEl.innerHTML = "";
+    }
+  }
+
+  function openBoardPanel() {
+    boardOverlayEl.hidden = false;
+    fetchBoard();
+  }
+
+  function closeBoardPanel() {
+    boardOverlayEl.hidden = true;
+    cmdInput.focus();
+  }
+
+  function formatBoardDate(value) {
+    if (!value) return "";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "";
+    return date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  }
+
+  function boardForwardTarget(columnId) {
+    if (columnId === "raw") return { column: "refined", label: "Plan" };
+    if (columnId === "refined") return { column: "planned", label: "Ready" };
+    if (columnId === "planned") return { column: "in_progress", label: "Start" };
+    if (columnId === "in_progress") return { column: "done", label: "Done" };
+    return null;
+  }
+
+  function boardGateText(item) {
+    const gate = item.gate_status || {};
+    const missing = Array.isArray(gate.missing) ? gate.missing : [];
+    if (!missing.length) {
+      return gate.message || "Ready to move forward.";
+    }
+    const labels = missing.map((field) => BOARD_FIELD_LABELS[field] || field).join(", ");
+    return `Soft gate: add ${labels}. You can still move it.`;
+  }
+
+  function boardGateClass(item) {
+    const gate = item.gate_status || {};
+    const missing = Array.isArray(gate.missing) ? gate.missing : [];
+    return missing.length ? "board-gate needs-info" : "board-gate";
+  }
+
+  function renderBoardDetails(item) {
+    const fields = [
+      ["why", "Why / use"],
+      ["steps", "Steps"],
+      ["acceptance", "Done check"]
+    ];
+    return `
+      <div class="board-detail-grid">
+        ${fields.map(([field, label]) => `
+          <textarea
+            class="board-detail-input"
+            data-id="${escapeHtml(item.id || "")}"
+            data-field="${field}"
+            rows="1"
+            placeholder="${label}"
+          >${escapeHtml(item[field] || "")}</textarea>
+        `).join("")}
+      </div>
+    `;
+  }
+
+  function renderBoardTask(item, columnId) {
+    const title = escapeHtml(item.title || "Untitled task");
+    const mode = escapeHtml(item.mode || "SHARED");
+    const owner = item.owner ? `<span class="board-pill">${escapeHtml(item.owner)}</span>` : "";
+    const priority = item.priority ? `<span class="board-pill">Priority</span>` : "";
+    const updated = formatBoardDate(item.updated_at);
+    const updatedPill = updated ? `<span class="board-pill">${escapeHtml(updated)}</span>` : "";
+    const forward = boardForwardTarget(columnId);
+    const forwardButton = forward
+      ? `<button class="board-mini-btn" type="button" data-board-action="move" data-target-column="${forward.column}" data-id="${escapeHtml(item.id || "")}">${forward.label}</button>`
+      : "";
+    const deleteButton = `<button class="board-mini-btn danger" type="button" data-board-action="delete" data-id="${escapeHtml(item.id || "")}">Delete</button>`;
+
+    return `
+      <article class="board-task stage-${escapeHtml(columnId)}" draggable="true" data-id="${escapeHtml(item.id || "")}" data-testid="board-card">
+        <div class="board-task-title" contenteditable="true" spellcheck="false" data-id="${escapeHtml(item.id || "")}">${title}</div>
+        <div class="board-task-meta">
+          <span class="board-pill">${mode}</span>
+          ${owner}
+          ${priority}
+          ${updatedPill}
+        </div>
+        <div class="${boardGateClass(item)}">${escapeHtml(boardGateText(item))}</div>
+        ${renderBoardDetails(item)}
+        <div class="board-task-actions">
+          ${forwardButton}
+          ${deleteButton}
+        </div>
+      </article>
+    `;
+  }
+
+  function renderBoard() {
+    const board = state.board || {};
+    const columns = board.columns || {};
+    const updated = formatBoardDate(board.updated_at);
+    setBoardStatus(updated ? `Updated ${updated}` : "Board ready");
+
+    boardColumnsEl.innerHTML = BOARD_COLUMNS.map((column) => {
+      const items = columns[column.id] || [];
+      const body = items.length
+        ? items.map((item) => renderBoardTask(item, column.id)).join("")
+        : `<div class="board-empty">${column.empty}</div>`;
+
+      return `
+        <section class="board-column" data-column="${column.id}" data-testid="board-column-${column.id}">
+          <div class="board-column-head">
+            <span>${column.label}</span>
+            <span class="board-count">${items.length}</span>
+          </div>
+          <div class="board-column-body" data-column="${column.id}">
+            ${body}
+          </div>
+        </section>
+      `;
+    }).join("");
+  }
+
+  async function addBoardTask(title) {
+    await boardRequest("/api/board/add", { title, column: "raw" });
+    setBoardStatus("Task added.");
+  }
+
+  async function updateBoardTask(id, title) {
+    await boardRequest("/api/board/update", { id, title });
+    setBoardStatus("Task updated.");
+  }
+
+  async function updateBoardField(id, field, value) {
+    await boardRequest("/api/board/update", { id, [field]: value });
+    setBoardStatus("Card updated.");
+  }
+
+  async function moveBoardTask(id, columnId) {
+    await boardRequest("/api/board/move", { id, column: columnId });
+    setBoardStatus(`Moved to ${boardColumnLabel(columnId)}.`);
+  }
+
+  async function deleteBoardTask(id) {
+    await boardRequest("/api/board/delete", { id });
+    setBoardStatus("Card deleted.");
   }
 
   function getOnboardingSteps() {
@@ -1888,6 +2590,9 @@
         try {
           state.pulse = JSON.parse(message.slice(6));
           renderPulse();
+          if (!boardOverlayEl.hidden) {
+            fetchBoard();
+          }
         } catch (_err) {}
         return;
       }
@@ -1900,7 +2605,7 @@
       append(message, kind);
       if (message.includes("Connected to The Compound")) {
         state.login.connected = true;
-        hudMessageEl.textContent = `${state.login.profile} online`;
+        renderHudPresence();
         maybeStartOnboarding();
       }
     };
@@ -1911,6 +2616,7 @@
       state.players = [];
       state.login.connected = false;
       state.login.nameSent = false;
+      hudStatusPillEl.hidden = true;
       renderPlayers();
     };
 
@@ -1931,9 +2637,161 @@
 
     document.querySelectorAll(".chip").forEach((button) => {
       button.addEventListener("click", () => {
+        if (button.dataset.open === "board") {
+          openBoardPanel();
+          return;
+        }
+        if (button.dataset.open === "status") {
+          toggleStatusPanel();
+          return;
+        }
+        if (!button.dataset.cmd) return;
         runCommand(button.dataset.cmd);
         cmdInput.focus();
       });
+    });
+
+    statusPanelEl.addEventListener("submit", (event) => {
+      event.preventDefault();
+      setOperatorStatus(statusInputEl.value);
+    });
+
+    statusPresetEls.forEach((button) => {
+      button.addEventListener("click", () => {
+        setOperatorStatus(button.dataset.status || "");
+      });
+    });
+
+    boardCloseEl.addEventListener("click", closeBoardPanel);
+
+    boardOverlayEl.addEventListener("click", (event) => {
+      if (event.target === boardOverlayEl) {
+        closeBoardPanel();
+      }
+    });
+
+    boardAddFormEl.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const title = boardTitleInputEl.value.trim();
+      if (!title) return;
+      boardTitleInputEl.value = "";
+      try {
+        await addBoardTask(title);
+      } catch (err) {
+        setBoardStatus(err.message || "Could not add task.");
+      }
+    });
+
+    boardColumnsEl.addEventListener("dragstart", (event) => {
+      const task = event.target.closest(".board-task");
+      if (!task) return;
+      state.boardDraggingId = task.dataset.id || "";
+      task.classList.add("dragging");
+      event.dataTransfer.effectAllowed = "move";
+      event.dataTransfer.setData("text/plain", state.boardDraggingId);
+    });
+
+    boardColumnsEl.addEventListener("dragend", (event) => {
+      const task = event.target.closest(".board-task");
+      if (task) task.classList.remove("dragging");
+      state.boardDraggingId = "";
+      document.querySelectorAll(".board-column-body.drag-over").forEach((body) => {
+        body.classList.remove("drag-over");
+      });
+    });
+
+    boardColumnsEl.addEventListener("dragover", (event) => {
+      const body = event.target.closest(".board-column-body");
+      if (!body) return;
+      event.preventDefault();
+      body.classList.add("drag-over");
+    });
+
+    boardColumnsEl.addEventListener("dragleave", (event) => {
+      const body = event.target.closest(".board-column-body");
+      if (body && !body.contains(event.relatedTarget)) {
+        body.classList.remove("drag-over");
+      }
+    });
+
+    boardColumnsEl.addEventListener("drop", async (event) => {
+      const body = event.target.closest(".board-column-body");
+      if (!body) return;
+      event.preventDefault();
+      body.classList.remove("drag-over");
+      const id = event.dataTransfer.getData("text/plain") || state.boardDraggingId;
+      const column = body.dataset.column;
+      if (!id || !column) return;
+      try {
+        await moveBoardTask(id, column);
+      } catch (err) {
+        setBoardStatus(err.message || "Could not move task.");
+      }
+    });
+
+    boardColumnsEl.addEventListener("blur", async (event) => {
+      const titleEl = event.target.closest(".board-task-title");
+      if (!titleEl) return;
+      const id = titleEl.dataset.id;
+      const title = titleEl.textContent.trim();
+      if (!id || !title) {
+        renderBoard();
+        return;
+      }
+      try {
+        await updateBoardTask(id, title);
+      } catch (err) {
+        setBoardStatus(err.message || "Could not update task.");
+      }
+    }, true);
+
+    boardColumnsEl.addEventListener("blur", async (event) => {
+      const detailEl = event.target.closest(".board-detail-input");
+      if (!detailEl) return;
+      const id = detailEl.dataset.id;
+      const field = detailEl.dataset.field;
+      if (!id || !field) return;
+      try {
+        await updateBoardField(id, field, detailEl.value.trim());
+      } catch (err) {
+        setBoardStatus(err.message || "Could not update card.");
+      }
+    }, true);
+
+    boardColumnsEl.addEventListener("keydown", (event) => {
+      const titleEl = event.target.closest(".board-task-title");
+      if (!titleEl) return;
+      if (event.key === "Enter") {
+        event.preventDefault();
+        titleEl.blur();
+      }
+      if (event.key === "Escape") {
+        event.preventDefault();
+        renderBoard();
+      }
+    });
+
+    boardColumnsEl.addEventListener("click", async (event) => {
+      const actionButton = event.target.closest("[data-board-action]");
+      if (!actionButton) return;
+      const id = actionButton.dataset.id;
+      const action = actionButton.dataset.boardAction;
+      if (!id) return;
+      try {
+        if (action === "move") {
+          const targetColumn = actionButton.dataset.targetColumn;
+          if (targetColumn) {
+            await moveBoardTask(id, targetColumn);
+          }
+        } else if (action === "delete") {
+          const confirmed = window.confirm("Delete this board card?");
+          if (confirmed) {
+            await deleteBoardTask(id);
+          }
+        }
+      } catch (err) {
+        setBoardStatus(err.message || "Could not update task.");
+      }
     });
 
     profileButtons.forEach((button) => {
@@ -1946,7 +2804,7 @@
     });
 
     document.addEventListener("click", (event) => {
-      if (!loginOverlayEl.hidden || !onboardingOverlayEl.hidden) return;
+      if (!loginOverlayEl.hidden || !onboardingOverlayEl.hidden || !boardOverlayEl.hidden) return;
       if (event.target.closest("button,input,textarea,select,a")) return;
       cmdInput.focus();
     });

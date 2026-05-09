@@ -219,13 +219,13 @@ def render_board(board: dict, actor: str | None = None, online_players: list[str
     else:
         lines.append("(none)")
 
-    lines.extend(["", "PIPELINE", "RAW"])
+    lines.extend(["", "PIPELINE", "IDEAS"])
     lines.extend(_render_items(board["columns"]["raw"]))
     lines.append("")
-    lines.append("REFINED")
+    lines.append("PLANS")
     lines.extend(_render_items(board["columns"]["refined"]))
     lines.append("")
-    lines.append("PLANNED")
+    lines.append("READY")
     lines.extend(_render_items(board["columns"]["planned"]))
     lines.append("")
     lines.append("DONE")
