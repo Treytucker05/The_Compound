@@ -1,0 +1,354 @@
+"""
+commands.py — Filesystem Command Parser
+Track B — COMPOUND_APPROACH World Engine
+"""
+
+from datetime import datetime, timezone
+
+from board import (
+    add_item,
+    complete_current_work,
+    complete_work,
+    load_board,
+    mark_priority,
+    render_board,
+    set_mode,
+    start_work,
+)
+from vault_sync import sync as vault_sync
+from world import Player, World
+
+
+def handle(player: Player, world: World, raw: str) -> str:
+    raw = raw.strip()
+    if not raw:
+        return ""
+
+    parts = raw.split(None, 1)
+    cmd = parts[0].lower()
+    args = parts[1] if len(parts) > 1 else ""
+
+    board_path = getattr(world, "board_path", None)
+
+    # Operational board
+    if cmd == "board":
+        return _render_operational_board(player, world)
+
+    if cmd == "next":
+        return _render_operational_board(player, world)
+
+    if cmd == "add":
+        if not args:
+            return "Add what?"
+        board, item = add_item(board_path, args, player.name)
+        _log_board_event(world, "task_added", player, {"item": item})
+        _trigger_sync()
+        return f"Added to RAW: {item['title']}\n\n{render_board(board, player.name, _online_players(world))}"
+
+    if cmd == "working":
+        if not args.lower().startswith("on "):
+            return "Use: working on <item>"
+        title = args[3:].strip()
+        if not title:
+            return "Working on what?"
+        board, item = start_work(board_path, title, player.name)
+        player.status = f"working on {item['title']}"[:60]
+        _log_board_event(world, "task_started", player, {"item": item})
+        _trigger_sync()
+        return f"Moved to IN PROGRESS: {item['title']} ({player.name})\n\n{render_board(board, player.name, _online_players(world))}"
+
+    if cmd == "priority":
+        if not args:
+            return "Mark what as priority?"
+        board, item = mark_priority(board_path, args, player.name)
+        if not item:
+            return f"No board item matching: {args}"
+        _log_board_event(world, "task_prioritized", player, {"item": item})
+        _trigger_sync()
+        return f"Marked PRIORITY: {item['title']}\n\n{render_board(board, player.name, _online_players(world))}"
+
+    if cmd in ("solo", "shared", "share"):
+        if not args:
+            return f"Mark what as {cmd.upper()}?"
+        mode = "SHARED" if cmd in ("shared", "share") else "SOLO"
+        board, item = set_mode(board_path, args, mode, player.name)
+        if not item:
+            return f"No board item matching: {args}"
+        _log_board_event(world, "task_mode_changed", player, {"item": item, "mode": mode})
+        _trigger_sync()
+        return f"Marked {mode}: {item['title']}\n\n{render_board(board, player.name, _online_players(world))}"
+
+    if cmd == "done":
+        if not args:
+            return "Use: done <item> -- <what happened>, or done <what happened> for your current task."
+        title, note = _parse_done_args(args)
+        if title:
+            board, item = complete_work(board_path, title, note, player.name)
+        else:
+            board, item = complete_current_work(board_path, note, player.name)
+        if not item:
+            return "No matching in-progress board item found."
+        player.status = "observing"
+        _log_board_event(world, "task_done", player, {"item": item, "note": note})
+        _trigger_sync()
+        return f"Moved to DONE: {item['title']}\nLogged: {note}\n\n{render_board(board, player.name, _online_players(world))}"
+
+    # Navigation by cardinal direction
+    if cmd in ("n", "north"):
+        return world.move_player(player, "north")
+    if cmd in ("s", "south"):
+        return world.move_player(player, "south")
+    if cmd in ("e", "east"):
+        return world.move_player(player, "east")
+    if cmd in ("w", "west"):
+        return world.move_player(player, "west")
+    if cmd in ("ne", "northeast"):
+        return world.move_player(player, "northeast")
+    if cmd in ("nw", "northwest"):
+        return world.move_player(player, "northwest")
+    if cmd in ("se", "southeast"):
+        return world.move_player(player, "southeast")
+    if cmd in ("sw", "southwest"):
+        return world.move_player(player, "southwest")
+    if cmd in ("u", "up"):
+        return world.move_player(player, "up")
+    if cmd in ("d", "down"):
+        return world.move_player(player, "down")
+
+    # Filesystem navigation
+    if cmd == "cd" or cmd == "go":
+        if not args:
+            return "Go where?"
+        return _cd(player, world, args)
+
+    if cmd == "ls" or cmd == "dir" or cmd == "l" or cmd == "look":
+        if not player.room:
+            return "You are nowhere."
+        return player.room.look()
+
+    if cmd == "cat" or cmd == "read" or cmd == "less":
+        if not args:
+            return "Read what?"
+        return _cat(player, args)
+
+    if cmd == "pwd":
+        if not player.room:
+            return "Nowhere."
+        rel = str(player.room.path.relative_to(world.root.parent)) if player.room.path != world.root else "The Compound"
+        return f"Current directory: {rel}"
+
+    if cmd == "find":
+        if not args:
+            return "Find what?"
+        return _find(world, args)
+
+    # Communication
+    if cmd == "say":
+        if not args:
+            return "Say what?"
+        world.broadcast(player, f"{player.name} says, '{args}'")
+        return f"You say, '{args}'"
+
+    if cmd == "tell":
+        if not args:
+            return "Tell who what?"
+        target_parts = args.split(None, 1)
+        if len(target_parts) < 2:
+            return "Tell them what?"
+        return world.tell(player, target_parts[0], target_parts[1])
+
+    if cmd == "who":
+        return world.who()
+
+    if cmd == "examine" or cmd == "ex":
+        if not args:
+            return "Examine what?"
+        return _examine(player, args)
+
+    if cmd == "status":
+        if not args:
+            return f"Your current status: {player.status}"
+        player.status = args.strip()[:60]
+        return f"Status set: {player.status}"
+
+    if cmd == "projects":
+        return world.projects()
+
+    if cmd == "warp":
+        if not args:
+            return "Warp where? Type 'projects' to see active directories."
+        return world.warp_player(player, args.strip())
+
+    if cmd == "note":
+        if not args:
+            return "Note what?"
+        if not player.room:
+            return "You are nowhere."
+        note = {
+            "author": player.name,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "text": args.strip(),
+        }
+        player.room.notes.append(note)
+        world.save_notes()
+        return f"You pin a note to the board: '{note['text']}'"
+
+    if cmd == "notes":
+        if not player.room:
+            return "You are nowhere."
+        if not player.room.notes:
+            return "The board is empty."
+        lines = ["Notes on the board:", ""]
+        for i, note in enumerate(player.room.notes[-10:], 1):
+            ts = note["timestamp"][:19].replace("T", " ") if "timestamp" in note else ""
+            lines.append(f"  {i}. [{ts}] {note['author']}: {note['text']}")
+        return "\n".join(lines)
+
+    if cmd == "clear":
+        return "__CLEAR__"
+
+    if cmd == "help" or cmd == "?":
+        return _help()
+
+    if cmd == "quit":
+        return "__QUIT__"
+
+    return f"Unknown command: {cmd}. Type 'help' for a list."
+
+
+def _cd(player: Player, world: World, target: str) -> str:
+    """Change directory by name or direction."""
+    target_lower = target.lower().strip()
+
+    # Try exact direction match first
+    if target_lower in player.room.exits:
+        return world.move_player(player, target_lower)
+
+    # Try match on directory name (last path component) or exact dir_id
+    for direction, dir_id in player.room.exits.items():
+        if target_lower == dir_id.lower():
+            return world.move_player(player, direction)
+        dir_name = dir_id.split("/")[-1].lower() if "/" in dir_id else dir_id.lower()
+        if target_lower == dir_name:
+            return world.move_player(player, direction)
+        if target_lower == direction:
+            return world.move_player(player, direction)
+
+    # Try warp (absolute path)
+    if target_lower in world.dirs:
+        return world.warp_player(player, target_lower)
+
+    return f"Cannot find: {target}"
+
+
+def _cat(player: Player, target: str) -> str:
+    """Preview a file's contents."""
+    target_lower = target.lower()
+    if not player.room:
+        return "You are nowhere."
+
+    for f in player.room.files:
+        if target_lower in f.name.lower():
+            return f.preview()
+
+    return f"No file matching '{target}' here."
+
+
+def _examine(player: Player, target: str) -> str:
+    """Examine a file or player in the room."""
+    target_lower = target.lower()
+
+    if player.room:
+        for f in player.room.files:
+            if target_lower in f.name.lower():
+                size = f.format_size()
+                mtime = f.mtime.strftime("%Y-%m-%d %H:%M:%S")
+                text_flag = "text" if f.is_text else "binary"
+                return f"{f.name}\n  Size: {size}\n  Modified: {mtime}\n  Type: {text_flag}"
+        for p in player.room.players:
+            if target_lower in p.name.lower() and p is not player:
+                status = f"\nThey appear to be: {p.status}" if p.status else ""
+                return f"{p.name} is here.{status}"
+
+    return "You don't see that here."
+
+
+def _find(world: World, target: str) -> str:
+    """Search for files across all directories."""
+    target_lower = target.lower()
+    matches = []
+    for d in world.dirs.values():
+        for f in d.files:
+            if target_lower in f.name.lower():
+                rel = str(d.path.relative_to(world.root)) if d.path != world.root else "."
+                matches.append(f"  {rel}/{f.name}")
+    if not matches:
+        return f"No files matching '{target}' found."
+    if len(matches) > 20:
+        return f"Found {len(matches)} matches (showing first 20):\n" + "\n".join(matches[:20])
+    return f"Found {len(matches)} match(es):\n" + "\n".join(matches)
+
+
+def _help() -> str:
+    return (
+        "Commands:\n"
+        "  board                — Show the Operational Board\n"
+        "  add <item>           — Add an item to RAW\n"
+        "  working on <item>    — Move item to IN PROGRESS and claim it\n"
+        "  priority <item>      — Mark an item as priority\n"
+        "  solo <item>          — Mark item as owner-only\n"
+        "  shared <item>        — Mark item as handoff-friendly\n"
+        "  done <item> -- <note> — Move item to DONE and log what happened\n"
+        "  next                 — Show the board with next best action\n"
+        "  n, s, e, w, ne, nw, se, sw, u, d\n"
+        "                       — Move by cardinal direction\n"
+        "  cd / go <dir>        — Go to a subdirectory by name\n"
+        "  ls / look / dir      — List files and subdirectories\n"
+        "  cat / read <file>    — Preview file contents\n"
+        "  pwd                  — Show current directory path\n"
+        "  find <name>          — Search for files across The Compound\n"
+        "  say <message>        — Speak to everyone in the room\n"
+        "  tell <who> <msg>     — Send a private message\n"
+        "  who                  — List connected players + locations\n"
+        "  status <text>        — Set what you're working on\n"
+        "  projects             — See active directories + occupancy\n"
+        "  warp <dir_id>        — Jump to any directory instantly\n"
+        "  note <message>       — Pin a note to the room board\n"
+        "  notes                — Read the room's note board\n"
+        "  examine <target>     — Inspect a file or player\n"
+        "  clear                — Clear your screen\n"
+        "  help (?)             — Show this help\n"
+        "  quit                 — Leave the workspace"
+    )
+
+
+def _render_operational_board(player: Player, world: World) -> str:
+    board = load_board(getattr(world, "board_path", None))
+    return render_board(board, player.name, _online_players(world))
+
+
+def _online_players(world: World) -> list[str]:
+    return [p.name for p in getattr(world, "players", {}).values()]
+
+
+def _parse_done_args(args: str) -> tuple[str | None, str]:
+    if " -- " in args:
+        title, note = args.split(" -- ", 1)
+        return title.strip(), note.strip()
+    if " - " in args:
+        title, note = args.split(" - ", 1)
+        return title.strip(), note.strip()
+    return None, args.strip()
+
+
+def _trigger_sync():
+    try:
+        vault_sync()
+    except Exception:
+        pass
+
+
+def _log_board_event(world: World, event_type: str, player: Player, data: dict):
+    logger = getattr(world, "log_board_event", None)
+    if callable(logger):
+        logger(event_type, player.name, data)

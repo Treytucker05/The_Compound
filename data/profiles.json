@@ -1,0 +1,25 @@
+{
+  "profiles": {
+    "joseph": {
+      "name": "Joseph Harris",
+      "email": "joseph.harris.tx@gmail.com",
+      "vault_open": "01_JOSEPH",
+      "accent": "#88c0d0",
+      "status": "Building the bridge."
+    },
+    "trey": {
+      "name": "Trey",
+      "email": null,
+      "vault_open": "02_TREY",
+      "accent": "#a3be8c",
+      "status": "Operator mode."
+    },
+    "shared": {
+      "name": "Shared",
+      "email": null,
+      "vault_open": "03_SHARED",
+      "accent": "#ebcb8b",
+      "status": "Collaborative space."
+    }
+  }
+}

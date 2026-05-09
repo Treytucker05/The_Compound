@@ -1,0 +1,7 @@
+{
+  "alwaysUpdateLinks": true,
+  "newFileLocation": "folder",
+  "newFileFolderPath": "00_DAILY",
+  "attachmentFolderPath": "99_ARCHIVE/attachments",
+  "promptDelete": false
+}

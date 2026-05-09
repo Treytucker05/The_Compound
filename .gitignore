@@ -1,0 +1,25 @@
+# Python/runtime artifacts
+.python/
+**/__pycache__/
+*.py[cod]
+*.pyo
+
+# Generated packages and backups
+dist/
+*.zip
+*.bak-*
+
+# Local environment
+config/.env
+
+# Live runtime state
+*.pid
+data/.quickstart_seeded_v1.json
+data/board.json
+data/notes.json
+data/logs/
+
+# Local editor/OS noise
+.DS_Store
+Thumbs.db
+**/.obsidian/workspace*.json

@@ -1,0 +1,1682 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Compound - Portal HUD</title>
+<style>
+  :root {
+    --bg: #060b0a;
+    --bg-soft: #0d1614;
+    --bg-panel: #111d1a;
+    --line: #20312d;
+    --line-strong: #2d4b44;
+    --text: #d8efe8;
+    --text-dim: #8ca8a1;
+    --accent: #38c089;
+    --accent-2: #ffbc52;
+    --danger: #ff6f61;
+    --good: #71e2af;
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  html,
+  body {
+    height: 100%;
+    background:
+      radial-gradient(circle at 20% -10%, #16352b 0%, transparent 32%),
+      radial-gradient(circle at 90% 120%, #213323 0%, transparent 40%),
+      var(--bg);
+    color: var(--text);
+    font-family: "IBM Plex Mono", "Cascadia Code", "Consolas", monospace;
+    line-height: 1.4;
+    overflow: hidden;
+  }
+
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background: repeating-linear-gradient(
+      to bottom,
+      rgba(255, 255, 255, 0.01),
+      rgba(255, 255, 255, 0.01) 1px,
+      rgba(0, 0, 0, 0) 2px,
+      rgba(0, 0, 0, 0) 4px
+    );
+    opacity: 0.45;
+  }
+
+  #layout {
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(460px, 1.55fr) minmax(340px, 1fr);
+    gap: 12px;
+    height: 100vh;
+    padding: 12px;
+  }
+
+  .panel {
+    background: linear-gradient(180deg, rgba(28, 47, 41, 0.92), rgba(12, 20, 18, 0.95));
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    box-shadow:
+      inset 0 0 0 1px rgba(255, 255, 255, 0.03),
+      0 18px 42px rgba(0, 0, 0, 0.35);
+    overflow: hidden;
+    backdrop-filter: blur(4px);
+  }
+
+  #terminal-pane {
+    display: grid;
+    grid-template-rows: auto 1fr auto auto;
+    min-width: 0;
+  }
+
+  #terminal-head {
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--line);
+    background: linear-gradient(90deg, rgba(56, 192, 137, 0.15), rgba(255, 188, 82, 0.08));
+  }
+
+  #terminal-title {
+    font-size: 14px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--good);
+  }
+
+  #quick-commands {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 8px;
+  }
+
+  .chip {
+    border: 1px solid var(--line-strong);
+    background: rgba(0, 0, 0, 0.2);
+    color: var(--text);
+    border-radius: 999px;
+    padding: 5px 9px;
+    font-size: 11px;
+    cursor: pointer;
+    transition: transform 0.15s ease, border-color 0.15s ease;
+  }
+
+  .chip:hover {
+    transform: translateY(-1px);
+    border-color: var(--accent);
+  }
+
+  #output {
+    overflow-y: auto;
+    padding: 12px 14px;
+    white-space: pre-wrap;
+    word-break: break-word;
+    font-size: 13px;
+  }
+
+  #output .system { color: #7ed6ae; }
+  #output .room { color: #86d3ff; }
+  #output .chat { color: #ffd17f; }
+  #output .error { color: var(--danger); }
+  #output .prompt { color: #b0ffdc; }
+
+  #input-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-top: 1px solid var(--line);
+    padding: 10px 12px;
+    background: rgba(5, 10, 9, 0.85);
+  }
+
+  #prompt {
+    color: var(--accent-2);
+    font-size: 12px;
+    white-space: nowrap;
+  }
+
+  #cmd {
+    width: 100%;
+    border: none;
+    outline: none;
+    background: transparent;
+    color: var(--text);
+    font: inherit;
+    font-size: 13px;
+  }
+
+  #connection {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 7px 12px;
+    border-top: 1px solid var(--line);
+    color: var(--text-dim);
+    font-size: 11px;
+  }
+
+  #connection.connected {
+    color: var(--good);
+  }
+
+  #hud-pane {
+    display: grid;
+    grid-template-rows: auto auto 1fr;
+    min-width: 0;
+  }
+
+  #hud-top {
+    border-bottom: 1px solid var(--line);
+    padding: 12px 14px;
+    background: linear-gradient(90deg, rgba(40, 97, 74, 0.32), rgba(14, 25, 22, 0.7));
+  }
+
+  #hud-top h1 {
+    font-size: 15px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--accent);
+  }
+
+  #hud-sub {
+    margin-top: 4px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+
+  #hud-sub-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  #tabs {
+    display: flex;
+    gap: 6px;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--line);
+    background: rgba(8, 15, 13, 0.65);
+  }
+
+  .tab-btn {
+    border: 1px solid var(--line);
+    background: #0b1412;
+    color: var(--text-dim);
+    border-radius: 8px;
+    padding: 6px 10px;
+    font-size: 11px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .tab-btn.active {
+    color: var(--text);
+    border-color: var(--accent);
+    background: rgba(56, 192, 137, 0.12);
+  }
+
+  .tab-body {
+    display: none;
+    overflow: auto;
+    padding: 12px;
+    animation: fade-slide 0.24s ease;
+  }
+
+  .tab-body.active {
+    display: block;
+  }
+
+  @keyframes fade-slide {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .card {
+    border: 1px solid var(--line);
+    background: rgba(5, 11, 10, 0.62);
+    border-radius: 10px;
+    padding: 9px 10px;
+  }
+
+  .card .label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-dim);
+    margin-bottom: 4px;
+  }
+
+  .card .value {
+    font-size: 20px;
+    color: var(--good);
+    font-weight: 600;
+  }
+
+  .section {
+    margin-top: 10px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: rgba(5, 11, 10, 0.62);
+    overflow: hidden;
+  }
+
+  .section-head {
+    border-bottom: 1px solid var(--line);
+    padding: 8px 10px;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-dim);
+  }
+
+  .section-body {
+    padding: 9px 10px;
+  }
+
+  .progress {
+    width: 100%;
+    height: 8px;
+    background: #0a1412;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    overflow: hidden;
+  }
+
+  .progress > div {
+    height: 100%;
+    width: 0;
+    background: linear-gradient(90deg, #18b574, #ffc85f);
+    transition: width 0.35s ease;
+  }
+
+  .list {
+    list-style: none;
+    display: grid;
+    gap: 6px;
+  }
+
+  .list li {
+    font-size: 12px;
+    padding: 6px 8px;
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    background: rgba(10, 18, 16, 0.7);
+  }
+
+  #vault-controls {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 8px;
+  }
+
+  #vault-controls input {
+    flex: 1;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: rgba(9, 17, 14, 0.9);
+    color: var(--text);
+    font: inherit;
+    font-size: 12px;
+    padding: 7px 8px;
+    outline: none;
+  }
+
+  .btn {
+    border: 1px solid var(--line-strong);
+    border-radius: 8px;
+    background: rgba(9, 17, 14, 0.9);
+    color: var(--text);
+    padding: 7px 9px;
+    font: inherit;
+    font-size: 11px;
+    cursor: pointer;
+  }
+
+  .btn:hover {
+    border-color: var(--accent);
+  }
+
+  .btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .btn-tour {
+    padding: 4px 8px;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .profile-btn {
+    min-width: 118px;
+    padding: 11px 12px;
+    font-size: 13px;
+    color: var(--text);
+  }
+
+  .profile-btn.selected {
+    border-color: var(--accent);
+    background: rgba(56, 192, 137, 0.18);
+    color: var(--good);
+  }
+
+  #login-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 140;
+    display: grid;
+    place-items: center;
+    background: rgba(2, 6, 5, 0.76);
+    backdrop-filter: blur(5px);
+    padding: 16px;
+  }
+
+  #login-overlay[hidden] {
+    display: none;
+  }
+
+  #login-card {
+    width: min(460px, 100%);
+    border: 1px solid var(--line-strong);
+    border-radius: 14px;
+    background: linear-gradient(180deg, #10211c, #0a1412);
+    box-shadow: 0 20px 48px rgba(0, 0, 0, 0.45);
+    padding: 16px;
+  }
+
+  #login-kicker {
+    color: var(--accent);
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  #login-card h2 {
+    margin-top: 8px;
+    font-size: 20px;
+    color: var(--text);
+  }
+
+  #profile-buttons {
+    display: flex;
+    gap: 8px;
+    margin-top: 14px;
+    flex-wrap: wrap;
+  }
+
+  #login-options {
+    margin-top: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-dim);
+    font-size: 12px;
+  }
+
+  #login-options input {
+    accent-color: var(--accent);
+  }
+
+  #login-status {
+    min-height: 18px;
+    margin-top: 12px;
+    color: var(--accent-2);
+    font-size: 12px;
+  }
+
+  #vault-grid {
+    display: grid;
+    grid-template-columns: minmax(130px, 0.44fr) minmax(0, 1fr);
+    gap: 8px;
+    min-height: 320px;
+  }
+
+  #vault-files {
+    list-style: none;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    overflow: auto;
+    max-height: 520px;
+    background: rgba(8, 13, 12, 0.8);
+  }
+
+  #vault-files li {
+    font-size: 11px;
+    padding: 8px;
+    border-bottom: 1px solid rgba(32, 49, 45, 0.45);
+    cursor: pointer;
+    color: var(--text-dim);
+  }
+
+  #vault-files li:hover,
+  #vault-files li.active {
+    color: var(--text);
+    background: rgba(56, 192, 137, 0.14);
+  }
+
+  #vault-preview {
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: rgba(8, 13, 12, 0.8);
+    padding: 10px;
+    overflow: auto;
+    max-height: 520px;
+    font-size: 12px;
+  }
+
+  #vault-preview h1,
+  #vault-preview h2,
+  #vault-preview h3 {
+    color: var(--good);
+    margin-top: 8px;
+    margin-bottom: 6px;
+  }
+
+  #vault-preview p {
+    margin-bottom: 6px;
+    color: var(--text);
+  }
+
+  #vault-preview ul {
+    margin: 4px 0 8px 18px;
+  }
+
+  #vault-preview code {
+    color: #ffd48a;
+    background: rgba(255, 188, 82, 0.1);
+    padding: 0 4px;
+    border-radius: 4px;
+  }
+
+  #directory-path {
+    color: var(--accent-2);
+    margin-bottom: 8px;
+    word-break: break-all;
+    font-size: 11px;
+  }
+
+  #directory-list .dir {
+    color: #9fd7ff;
+  }
+
+  #directory-list .file {
+    color: #d0e8df;
+  }
+
+  .mono-dim {
+    color: var(--text-dim);
+    font-size: 11px;
+  }
+
+  #onboarding-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 120;
+    display: grid;
+    place-items: center;
+    background: rgba(2, 6, 5, 0.72);
+    backdrop-filter: blur(4px);
+    padding: 16px;
+  }
+
+  #onboarding-overlay[hidden] {
+    display: none;
+  }
+
+  #onboarding-card {
+    width: min(700px, 100%);
+    border: 1px solid var(--line-strong);
+    border-radius: 14px;
+    background: linear-gradient(180deg, #10211c, #0a1412);
+    box-shadow: 0 20px 48px rgba(0, 0, 0, 0.45);
+    overflow: hidden;
+  }
+
+  #onboarding-head {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--line);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--good);
+    background: rgba(56, 192, 137, 0.1);
+  }
+
+  #onboarding-body {
+    padding: 12px;
+  }
+
+  #onboarding-progress {
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-bottom: 8px;
+  }
+
+  #onboarding-title {
+    font-size: 18px;
+    color: var(--text);
+    margin-bottom: 8px;
+  }
+
+  #onboarding-copy {
+    color: var(--text);
+    font-size: 13px;
+    margin-bottom: 10px;
+    white-space: pre-wrap;
+  }
+
+  #onboarding-hint {
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 8px;
+    background: rgba(8, 14, 12, 0.85);
+    color: var(--text-dim);
+    font-size: 12px;
+  }
+
+  #onboarding-actions {
+    margin-top: 10px;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  #onboarding-strip {
+    position: fixed;
+    right: 16px;
+    bottom: 16px;
+    z-index: 125;
+    width: min(430px, calc(100vw - 32px));
+    border: 1px solid var(--line-strong);
+    border-radius: 12px;
+    background: linear-gradient(180deg, rgba(16, 33, 28, 0.98), rgba(8, 16, 14, 0.98));
+    box-shadow: 0 16px 36px rgba(0, 0, 0, 0.4);
+    padding: 10px;
+  }
+
+  #onboarding-strip[hidden] {
+    display: none;
+  }
+
+  #onboarding-strip-title {
+    color: var(--good);
+    font-size: 12px;
+    margin-top: 3px;
+  }
+
+  #onboarding-strip-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+    flex-wrap: wrap;
+  }
+
+  @media (max-width: 1020px) {
+    #layout {
+      grid-template-columns: 1fr;
+      grid-template-rows: minmax(280px, 55vh) minmax(220px, 45vh);
+    }
+  }
+</style>
+</head>
+<body>
+<div id="layout">
+  <section id="terminal-pane" class="panel">
+    <div id="terminal-head">
+      <div id="terminal-title">Witness Interface</div>
+      <div id="quick-commands">
+        <button class="chip" data-cmd="board">board</button>
+        <button class="chip" data-cmd="projects">projects</button>
+        <button class="chip" data-cmd="who">who</button>
+        <button class="chip" data-cmd="help">help</button>
+        <button class="chip" data-cmd="status building">status building</button>
+      </div>
+    </div>
+    <div id="output" data-testid="terminal-output"></div>
+    <div id="input-row">
+      <div id="prompt">&gt;</div>
+      <input id="cmd" data-testid="command-input" type="text" autocomplete="off" autofocus placeholder="Type command and press Enter">
+    </div>
+    <div id="connection" class="disconnected">
+      <span id="connection-text">Disconnected</span>
+      <span id="connection-tip">Portal target: ws://localhost:8765/ws</span>
+    </div>
+  </section>
+
+  <aside id="hud-pane" class="panel">
+    <div id="hud-top">
+      <h1>The Compound</h1>
+      <div id="hud-sub">
+        <span id="hud-clock">--:--:--</span>
+        <div id="hud-sub-right">
+          <span id="hud-message">Immersive mode: active</span>
+          <button class="btn btn-tour" id="tour-open" data-testid="guide-open">Guide Me</button>
+        </div>
+      </div>
+    </div>
+    <div id="tabs">
+      <button class="tab-btn active" data-tab="ops">Ops</button>
+      <button class="tab-btn" data-tab="vault">Vault</button>
+      <button class="tab-btn" data-tab="world">World</button>
+    </div>
+
+    <div class="tab-body active" id="tab-ops">
+      <div class="grid">
+        <div class="card">
+          <div class="label">Online</div>
+          <div class="value" id="metric-online">0</div>
+        </div>
+        <div class="card">
+          <div class="label">In Progress</div>
+          <div class="value" id="metric-inprogress">0</div>
+        </div>
+        <div class="card">
+          <div class="label">Done Total</div>
+          <div class="value" id="metric-done">0</div>
+        </div>
+        <div class="card">
+          <div class="label">Done Streak</div>
+          <div class="value" id="metric-streak">0</div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-head">Momentum</div>
+        <div class="section-body">
+          <div class="mono-dim" id="momentum-label">Score: 0</div>
+          <div class="progress" style="margin-top:6px;">
+            <div id="momentum-bar"></div>
+          </div>
+          <div class="mono-dim" style="margin-top:8px;" id="next-action">Next action: (none)</div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-head">Quest Loop</div>
+        <div class="section-body">
+          <ul class="list" id="quest-list">
+            <li>Loading quests...</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-head">Focus Sprint (25:00)</div>
+        <div class="section-body">
+          <div class="mono-dim" id="focus-time">25:00</div>
+          <div class="progress" style="margin-top:6px;">
+            <div id="focus-bar"></div>
+          </div>
+          <div style="display:flex; gap:6px; margin-top:8px;">
+            <button class="btn" id="focus-start">Start</button>
+            <button class="btn" id="focus-reset">Reset</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-head">Pulse Feed</div>
+        <div class="section-body">
+          <ul class="list" id="feed-list">
+            <li>No activity yet.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-body" id="tab-vault">
+      <div id="vault-controls">
+        <input type="text" id="vault-filter" placeholder="Filter markdown files...">
+        <button class="btn" id="vault-refresh">Refresh</button>
+      </div>
+      <div id="vault-grid">
+        <ul id="vault-files">
+          <li>Loading vault...</li>
+        </ul>
+        <article id="vault-preview">
+          <p>Select a vault note to preview it here.</p>
+        </article>
+      </div>
+    </div>
+
+    <div class="tab-body" id="tab-world">
+      <div class="section">
+        <div class="section-head">Online Operators</div>
+        <div class="section-body">
+          <ul class="list" id="online-list">
+            <li>No one connected.</li>
+          </ul>
+        </div>
+      </div>
+      <div class="section">
+        <div class="section-head">Current Directory</div>
+        <div class="section-body">
+          <div id="directory-path">-</div>
+          <ul class="list" id="directory-list">
+            <li>No directory data yet.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </aside>
+</div>
+
+<div id="login-overlay" data-testid="login-overlay">
+  <div id="login-card">
+    <div id="login-kicker">The Compound</div>
+    <h2>Choose your operator</h2>
+    <div id="profile-buttons" data-testid="profile-buttons">
+      <button class="btn profile-btn" data-profile="Trey" data-testid="profile-trey">Trey</button>
+      <button class="btn profile-btn" data-profile="Joe" data-testid="profile-joe">Joe</button>
+    </div>
+    <label id="login-options" for="login-onboarding">
+      <input id="login-onboarding" data-testid="login-onboarding-checkbox" type="checkbox" checked>
+      <span>Run onboarding after login</span>
+    </label>
+    <div id="login-status" data-testid="login-status"></div>
+  </div>
+</div>
+
+<div id="onboarding-overlay" data-testid="onboarding-overlay" hidden>
+  <div id="onboarding-card">
+    <div id="onboarding-head">Interactive Onboarding</div>
+    <div id="onboarding-body">
+      <div id="onboarding-progress" data-testid="onboarding-progress"></div>
+      <h2 id="onboarding-title" data-testid="onboarding-title"></h2>
+      <div id="onboarding-copy"></div>
+      <div id="onboarding-hint"></div>
+      <div id="onboarding-actions">
+        <button class="btn" id="onboarding-action" data-testid="onboarding-action">Do Step Action</button>
+        <button class="btn" id="onboarding-next" data-testid="onboarding-next">Next</button>
+        <button class="btn" id="onboarding-skip">Skip Tour</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="onboarding-strip" data-testid="onboarding-strip" hidden>
+  <div id="onboarding-strip-progress" class="mono-dim"></div>
+  <div id="onboarding-strip-title"></div>
+  <div id="onboarding-strip-actions">
+    <button class="btn" id="onboarding-strip-show" data-testid="onboarding-strip-show">Show Guide</button>
+    <button class="btn" id="onboarding-strip-next" data-testid="onboarding-strip-next">Next</button>
+  </div>
+</div>
+
+<script>
+  const output = document.getElementById("output");
+  const cmdInput = document.getElementById("cmd");
+  const promptEl = document.getElementById("prompt");
+  const connectionEl = document.getElementById("connection");
+  const connectionTextEl = document.getElementById("connection-text");
+  const hudClockEl = document.getElementById("hud-clock");
+  const hudMessageEl = document.getElementById("hud-message");
+
+  const metricOnlineEl = document.getElementById("metric-online");
+  const metricInProgressEl = document.getElementById("metric-inprogress");
+  const metricDoneEl = document.getElementById("metric-done");
+  const metricStreakEl = document.getElementById("metric-streak");
+  const momentumLabelEl = document.getElementById("momentum-label");
+  const momentumBarEl = document.getElementById("momentum-bar");
+  const nextActionEl = document.getElementById("next-action");
+  const questListEl = document.getElementById("quest-list");
+  const feedListEl = document.getElementById("feed-list");
+
+  const onlineListEl = document.getElementById("online-list");
+  const directoryPathEl = document.getElementById("directory-path");
+  const directoryListEl = document.getElementById("directory-list");
+
+  const vaultFilterEl = document.getElementById("vault-filter");
+  const vaultFilesEl = document.getElementById("vault-files");
+  const vaultPreviewEl = document.getElementById("vault-preview");
+
+  const focusTimeEl = document.getElementById("focus-time");
+  const focusBarEl = document.getElementById("focus-bar");
+  const focusStartEl = document.getElementById("focus-start");
+  const focusResetEl = document.getElementById("focus-reset");
+  const tourOpenEl = document.getElementById("tour-open");
+
+  const loginOverlayEl = document.getElementById("login-overlay");
+  const loginOnboardingEl = document.getElementById("login-onboarding");
+  const loginStatusEl = document.getElementById("login-status");
+  const profileButtons = Array.from(document.querySelectorAll(".profile-btn"));
+
+  const onboardingOverlayEl = document.getElementById("onboarding-overlay");
+  const onboardingProgressEl = document.getElementById("onboarding-progress");
+  const onboardingTitleEl = document.getElementById("onboarding-title");
+  const onboardingCopyEl = document.getElementById("onboarding-copy");
+  const onboardingHintEl = document.getElementById("onboarding-hint");
+  const onboardingActionEl = document.getElementById("onboarding-action");
+  const onboardingNextEl = document.getElementById("onboarding-next");
+  const onboardingSkipEl = document.getElementById("onboarding-skip");
+  const onboardingStripEl = document.getElementById("onboarding-strip");
+  const onboardingStripProgressEl = document.getElementById("onboarding-strip-progress");
+  const onboardingStripTitleEl = document.getElementById("onboarding-strip-title");
+  const onboardingStripShowEl = document.getElementById("onboarding-strip-show");
+  const onboardingStripNextEl = document.getElementById("onboarding-strip-next");
+
+  const state = {
+    ws: null,
+    players: [],
+    dir: null,
+    pulse: null,
+    vaultFiles: [],
+    activeVaultPath: "",
+    focusEndMs: null,
+    focusInterval: null,
+    commandHistory: [],
+    login: {
+      profile: "Trey",
+      requested: false,
+      nameSent: false,
+      connected: false,
+      showOnboarding: true,
+      status: "Choose Trey or Joe to enter."
+    },
+    onboarding: {
+      active: false,
+      stepIndex: 0,
+      vaultOpened: false,
+      minimized: false
+    }
+  };
+
+  const FOCUS_MS = 25 * 60 * 1000;
+  const ONBOARDING_KEY = "compound_portal_onboarding_v1";
+  const PROFILE_KEY = "compound_profile_v1";
+  const SHOW_ONBOARDING_KEY = "compound_show_onboarding_v1";
+  const HUD_STORAGE_KEYS = [ONBOARDING_KEY, PROFILE_KEY, SHOW_ONBOARDING_KEY];
+
+  function storageGet(key, fallback = "") {
+    try {
+      return localStorage.getItem(key) ?? fallback;
+    } catch (_err) {
+      return fallback;
+    }
+  }
+
+  function storageSet(key, value) {
+    try {
+      localStorage.setItem(key, value);
+    } catch (_err) {
+      // ignore environments that block storage
+    }
+  }
+
+  function resetHudStorageFromUrl() {
+    const params = new URLSearchParams(window.location.search);
+    if (!params.has("reset_hud")) {
+      return;
+    }
+    HUD_STORAGE_KEYS.forEach((key) => {
+      try {
+        localStorage.removeItem(key);
+      } catch (_err) {
+        // ignore environments that block storage
+      }
+    });
+    params.delete("reset_hud");
+    const nextQuery = params.toString();
+    const nextUrl = `${window.location.pathname}${nextQuery ? `?${nextQuery}` : ""}${window.location.hash}`;
+    window.history.replaceState({}, "", nextUrl);
+  }
+
+  function loadLoginPreferences() {
+    const savedProfile = storageGet(PROFILE_KEY, "Trey");
+    state.login.profile = savedProfile === "Joe" ? "Joe" : "Trey";
+    state.login.showOnboarding = storageGet(SHOW_ONBOARDING_KEY, "1") !== "0";
+    loginOnboardingEl.checked = state.login.showOnboarding;
+    renderLogin();
+  }
+
+  function persistLoginPreferences() {
+    storageSet(PROFILE_KEY, state.login.profile);
+    storageSet(SHOW_ONBOARDING_KEY, state.login.showOnboarding ? "1" : "0");
+  }
+
+  function renderLogin() {
+    profileButtons.forEach((button) => {
+      const selected = button.dataset.profile === state.login.profile;
+      button.classList.toggle("selected", selected);
+      button.setAttribute("aria-pressed", selected ? "true" : "false");
+    });
+    loginStatusEl.textContent = state.login.status || "";
+  }
+
+  function showLogin(status = "") {
+    state.login.requested = false;
+    state.login.nameSent = false;
+    state.login.connected = false;
+    state.login.status = status || "Choose Trey or Joe to enter.";
+    loginOverlayEl.hidden = false;
+    renderLogin();
+  }
+
+  function hideLogin() {
+    loginOverlayEl.hidden = true;
+  }
+
+  function escapeHtml(text) {
+    const div = document.createElement("div");
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
+  function append(text, kind = "") {
+    const node = document.createElement("div");
+    node.textContent = text;
+    if (kind) node.className = kind;
+    output.appendChild(node);
+    output.scrollTop = output.scrollHeight;
+  }
+
+  function setConnection(connected, message) {
+    connectionEl.className = connected ? "connected" : "disconnected";
+    connectionTextEl.textContent = message;
+  }
+
+  function setActiveTab(tabName) {
+    document.querySelectorAll(".tab-btn").forEach((button) => {
+      button.classList.toggle("active", button.dataset.tab === tabName);
+    });
+    document.querySelectorAll(".tab-body").forEach((body) => {
+      body.classList.toggle("active", body.id === `tab-${tabName}`);
+    });
+  }
+
+  function hasCommandPrefix(prefix) {
+    const check = prefix.toLowerCase();
+    return state.commandHistory.some((entry) => entry.startsWith(check));
+  }
+
+  function questDone(questId) {
+    const quests = state.pulse?.quests || [];
+    const match = quests.find((quest) => quest.id === questId);
+    return Boolean(match && match.done);
+  }
+
+  function wsSend(text) {
+    if (state.ws && state.ws.readyState === WebSocket.OPEN) {
+      state.ws.send(text);
+      return true;
+    }
+    append("Not connected.", "error");
+    return false;
+  }
+
+  function sendLoginName() {
+    if (!state.login.requested || state.login.nameSent || !state.login.profile) {
+      return;
+    }
+    if (!state.ws || state.ws.readyState !== WebSocket.OPEN) {
+      return;
+    }
+    state.ws.send(state.login.profile);
+    state.login.nameSent = true;
+    state.login.status = `Entering as ${state.login.profile}...`;
+    hideLogin();
+    hudMessageEl.textContent = `${state.login.profile} entering The Compound`;
+  }
+
+  function chooseProfile(profile) {
+    state.login.profile = profile === "Joe" ? "Joe" : "Trey";
+    state.login.showOnboarding = loginOnboardingEl.checked;
+    state.login.requested = true;
+    state.login.nameSent = false;
+    state.login.status = state.ws && state.ws.readyState === WebSocket.OPEN
+      ? `Entering as ${state.login.profile}...`
+      : `Connecting as ${state.login.profile}...`;
+    persistLoginPreferences();
+    renderLogin();
+
+    if (!state.ws || state.ws.readyState === WebSocket.CLOSED || state.ws.readyState === WebSocket.CLOSING) {
+      connect();
+      return;
+    }
+    sendLoginName();
+  }
+
+  function runCommand(cmd) {
+    append(`${promptEl.textContent}${cmd}`, "prompt");
+    state.commandHistory.push(cmd.trim().toLowerCase());
+    if (state.commandHistory.length > 200) {
+      state.commandHistory.shift();
+    }
+    wsSend(cmd);
+    renderOnboarding();
+  }
+
+  function renderPlayers() {
+    const players = state.players || [];
+    metricOnlineEl.textContent = String(players.length);
+
+    if (!players.length) {
+      onlineListEl.innerHTML = "<li>No one connected.</li>";
+      return;
+    }
+
+    onlineListEl.innerHTML = players
+      .map((player) => {
+        const status = escapeHtml(player.status || "observing");
+        return `<li><strong>${escapeHtml(player.name)}</strong><br><span class="mono-dim">${escapeHtml(player.room || "unknown")} | ${status}</span></li>`;
+      })
+      .join("");
+  }
+
+  function renderDirectory() {
+    const dir = state.dir;
+    if (!dir) {
+      directoryPathEl.textContent = "-";
+      directoryListEl.innerHTML = "<li>No directory data yet.</li>";
+      return;
+    }
+
+    directoryPathEl.textContent = dir.path || "The Compound";
+    const items = [];
+    (dir.dirs || []).forEach((entry) => {
+      items.push(`<li class="dir">dir: ${escapeHtml(entry.name)} (${escapeHtml(entry.direction || "")})</li>`);
+    });
+    (dir.files || []).forEach((entry) => {
+      items.push(`<li class="file">file: ${escapeHtml(entry.name)} <span class="mono-dim">${escapeHtml(entry.size || "")}</span></li>`);
+    });
+    directoryListEl.innerHTML = items.length ? items.join("") : "<li>Directory is empty.</li>";
+  }
+
+  function computeMomentum(pulse) {
+    if (!pulse || !pulse.counts) return { score: 0, pct: 0 };
+    const c = pulse.counts;
+    const score = (c.done * 30) + (c.in_progress * 20) + (c.planned * 10) + (c.refined * 6) + (c.raw * 3);
+    const pct = Math.max(0, Math.min(100, Math.round((score / 220) * 100)));
+    return { score, pct };
+  }
+
+  function renderPulse() {
+    const pulse = state.pulse || {};
+    const counts = pulse.counts || {};
+    metricInProgressEl.textContent = String(counts.in_progress || 0);
+    metricDoneEl.textContent = String(counts.done || 0);
+    metricStreakEl.textContent = String(pulse.done_streak_days || 0);
+
+    const momentum = computeMomentum(pulse);
+    momentumLabelEl.textContent = `Score: ${momentum.score}`;
+    momentumBarEl.style.width = `${momentum.pct}%`;
+    nextActionEl.textContent = `Next action: ${pulse.next_action || "No active tasks."}`;
+
+    const quests = pulse.quests || [];
+    if (!quests.length) {
+      questListEl.innerHTML = "<li>No quests yet.</li>";
+    } else {
+      questListEl.innerHTML = quests
+        .map((quest) => {
+          const marker = quest.done ? "[x]" : "[ ]";
+          return `<li>${marker} ${escapeHtml(quest.title || "untitled")}</li>`;
+        })
+        .join("");
+    }
+
+    const feed = [];
+    (pulse.recent_news || []).forEach((entry) => {
+      feed.push(`<li>${escapeHtml(entry.text || "update")}</li>`);
+    });
+    if (!feed.length) {
+      const recentEvents = pulse.recent_events || [];
+      recentEvents.slice(-6).forEach((event) => {
+        const item = `${event.player || "system"}: ${event.event_type || "event"}`;
+        feed.push(`<li>${escapeHtml(item)}</li>`);
+      });
+    }
+    feedListEl.innerHTML = feed.length ? feed.join("") : "<li>No activity yet.</li>";
+    renderOnboarding();
+  }
+
+  function getOnboardingSteps() {
+    return [
+      {
+        id: "welcome",
+        title: "Welcome to The Compound",
+        copy: "This interactive walkthrough gets a new operator productive in minutes.\n\nYou will run a few commands in the left terminal and open one shared vault note.",
+        hint: "Click Next when ready.",
+        completionRequired: false,
+        check: () => true
+      },
+      {
+        id: "board",
+        title: "Step 1: Open the Operational Board",
+        copy: "Run `board` in the terminal to load the current work surface.",
+        hint: "Target command: board",
+        actionLabel: "Run: board",
+        actionCommand: "board",
+        completionRequired: true,
+        onEnter: () => setActiveTab("ops"),
+        check: () => hasCommandPrefix("board")
+      },
+      {
+        id: "claim",
+        title: "Step 2: Claim a Task",
+        copy: "Claim a task so your status is visible to everyone.",
+        hint: "Quick path: `working on onboarding warmup`",
+        actionLabel: "Run: working on onboarding warmup",
+        actionCommand: "working on onboarding warmup",
+        completionRequired: true,
+        onEnter: () => setActiveTab("ops"),
+        check: () => hasCommandPrefix("working on") || questDone("start_focus")
+      },
+      {
+        id: "ship",
+        title: "Step 3: Log a Completion",
+        copy: "Close the loop by recording a result with a done command.",
+        hint: "Quick path: `done finished onboarding warmup`",
+        actionLabel: "Run: done finished onboarding warmup",
+        actionCommand: "done finished onboarding warmup",
+        completionRequired: true,
+        onEnter: () => setActiveTab("ops"),
+        check: () => hasCommandPrefix("done") || questDone("ship_result")
+      },
+      {
+        id: "vault",
+        title: "Step 4: Open a Shared Vault Note",
+        copy: "Switch to the Vault tab and open any note.\n\nThis is where long-form shared context lives.",
+        hint: "Open a file from the list on the left of Vault preview.",
+        completionRequired: true,
+        onEnter: () => setActiveTab("vault"),
+        check: () => state.onboarding.vaultOpened
+      },
+      {
+        id: "finish",
+        title: "Onboarding Complete",
+        copy: "You are ready.\n\nDefault operating loop: `board` -> `working on` -> ship work -> `done`.\n\nUse `vault/03_SHARED/PORTAL_MISSIONS.md` for shared mission context.",
+        hint: "Click Finish to close this guide.",
+        completionRequired: false,
+        check: () => true
+      }
+    ];
+  }
+
+  function getCurrentOnboardingStep() {
+    const steps = getOnboardingSteps();
+    const maxIndex = steps.length - 1;
+    const index = Math.max(0, Math.min(maxIndex, state.onboarding.stepIndex));
+    state.onboarding.stepIndex = index;
+    return { steps, step: steps[index], index };
+  }
+
+  function isOnboardingAlreadyComplete() {
+    try {
+      return localStorage.getItem(ONBOARDING_KEY) === "1";
+    } catch (_err) {
+      return false;
+    }
+  }
+
+  function markOnboardingComplete() {
+    try {
+      localStorage.setItem(ONBOARDING_KEY, "1");
+    } catch (_err) {
+      // ignore environments that block storage
+    }
+  }
+
+  function startOnboarding(force = false) {
+    if (!force && isOnboardingAlreadyComplete()) {
+      return;
+    }
+    state.onboarding.active = true;
+    state.onboarding.stepIndex = 0;
+    state.onboarding.vaultOpened = false;
+    state.onboarding.minimized = false;
+    renderOnboarding();
+  }
+
+  function stopOnboarding(markComplete = false) {
+    state.onboarding.active = false;
+    onboardingOverlayEl.hidden = true;
+    onboardingStripEl.hidden = true;
+    state.onboarding.minimized = false;
+    if (markComplete) {
+      markOnboardingComplete();
+      hudMessageEl.textContent = "Onboarding complete";
+    }
+  }
+
+  function maybeStartOnboarding() {
+    if (!state.login.connected) {
+      return;
+    }
+    if (!state.login.showOnboarding) {
+      return;
+    }
+    if (state.onboarding.active) {
+      return;
+    }
+    if (!isOnboardingAlreadyComplete()) {
+      startOnboarding(false);
+    }
+  }
+
+  function advanceOnboarding() {
+    const { steps, step, index } = getCurrentOnboardingStep();
+    const done = Boolean(step.check && step.check());
+    if (step.completionRequired && !done) {
+      return;
+    }
+    if (index >= steps.length - 1) {
+      stopOnboarding(true);
+      return;
+    }
+    state.onboarding.stepIndex = index + 1;
+    state.onboarding.minimized = false;
+    renderOnboarding();
+  }
+
+  function minimizeOnboarding() {
+    if (!state.onboarding.active) {
+      return;
+    }
+    state.onboarding.minimized = true;
+    renderOnboarding();
+  }
+
+  function showOnboardingFull() {
+    if (!state.onboarding.active) {
+      startOnboarding(true);
+      return;
+    }
+    state.onboarding.minimized = false;
+    renderOnboarding();
+  }
+
+  function renderOnboarding() {
+    if (!state.onboarding.active) {
+      onboardingOverlayEl.hidden = true;
+      onboardingStripEl.hidden = true;
+      return;
+    }
+
+    const { steps, step, index } = getCurrentOnboardingStep();
+    if (typeof step.onEnter === "function") {
+      step.onEnter();
+    }
+    const done = Boolean(step.check && step.check());
+
+    onboardingProgressEl.textContent = `Step ${index + 1} of ${steps.length}`;
+    onboardingTitleEl.textContent = step.title || "Onboarding";
+    onboardingCopyEl.textContent = step.copy || "";
+    onboardingHintEl.textContent = step.hint || "";
+    onboardingStripProgressEl.textContent = `Step ${index + 1} of ${steps.length}`;
+    onboardingStripTitleEl.textContent = step.title || "Onboarding";
+
+    if (step.actionCommand) {
+      onboardingActionEl.hidden = false;
+      onboardingActionEl.disabled = !state.ws || state.ws.readyState !== WebSocket.OPEN;
+      onboardingActionEl.textContent = step.actionLabel || "Run Step Action";
+      onboardingActionEl.dataset.command = step.actionCommand;
+    } else {
+      onboardingActionEl.hidden = true;
+      onboardingActionEl.dataset.command = "";
+    }
+
+    const isFinal = index >= steps.length - 1;
+    onboardingNextEl.textContent = isFinal ? "Finish" : "Next";
+    onboardingNextEl.disabled = Boolean(step.completionRequired && !done);
+    onboardingStripNextEl.textContent = isFinal ? "Finish" : "Next";
+    onboardingStripNextEl.disabled = onboardingNextEl.disabled;
+    onboardingOverlayEl.hidden = state.onboarding.minimized;
+    onboardingStripEl.hidden = !state.onboarding.minimized;
+  }
+
+  async function fetchPulse() {
+    try {
+      const response = await fetch("/api/pulse", { cache: "no-store" });
+      if (!response.ok) return;
+      state.pulse = await response.json();
+      renderPulse();
+    } catch (_err) {
+      // ignore network transient errors
+    }
+  }
+
+  function renderVaultFileList() {
+    const q = vaultFilterEl.value.trim().toLowerCase();
+    const filtered = state.vaultFiles.filter((file) => file.path.toLowerCase().includes(q));
+
+    if (!filtered.length) {
+      vaultFilesEl.innerHTML = "<li>No matching files.</li>";
+      return;
+    }
+
+    vaultFilesEl.innerHTML = filtered
+      .map((file) => {
+        const active = file.path === state.activeVaultPath ? "active" : "";
+        return `<li class="${active}" data-path="${escapeHtml(file.path)}">${escapeHtml(file.path)}</li>`;
+      })
+      .join("");
+  }
+
+  async function fetchVaultIndex() {
+    try {
+      const response = await fetch("/api/vault/index", { cache: "no-store" });
+      if (!response.ok) return;
+      const payload = await response.json();
+      state.vaultFiles = payload.files || [];
+      renderVaultFileList();
+      if (!state.activeVaultPath && state.vaultFiles.length) {
+        await openVaultFile(state.vaultFiles[0].path);
+      }
+    } catch (_err) {
+      vaultFilesEl.innerHTML = "<li>Vault index unavailable.</li>";
+    }
+  }
+
+  function renderMarkdown(mdText) {
+    const lines = mdText.split(/\r?\n/);
+    let html = "";
+    let inList = false;
+
+    function closeList() {
+      if (inList) {
+        html += "</ul>";
+        inList = false;
+      }
+    }
+
+    lines.forEach((line) => {
+      const safe = escapeHtml(line);
+      if (/^###\s+/.test(line)) {
+        closeList();
+        html += `<h3>${safe.replace(/^###\s+/, "")}</h3>`;
+      } else if (/^##\s+/.test(line)) {
+        closeList();
+        html += `<h2>${safe.replace(/^##\s+/, "")}</h2>`;
+      } else if (/^#\s+/.test(line)) {
+        closeList();
+        html += `<h1>${safe.replace(/^#\s+/, "")}</h1>`;
+      } else if (/^\s*-\s+/.test(line)) {
+        if (!inList) {
+          html += "<ul>";
+          inList = true;
+        }
+        html += `<li>${safe.replace(/^\s*-\s+/, "")}</li>`;
+      } else if (!line.trim()) {
+        closeList();
+        html += "<p></p>";
+      } else {
+        closeList();
+        const inline = safe.replace(/`([^`]+)`/g, "<code>$1</code>");
+        html += `<p>${inline}</p>`;
+      }
+    });
+    closeList();
+    return html || "<p>(empty)</p>";
+  }
+
+  async function openVaultFile(path) {
+    try {
+      const response = await fetch(`/api/vault/read?path=${encodeURIComponent(path)}`, { cache: "no-store" });
+      if (!response.ok) {
+        vaultPreviewEl.innerHTML = `<p>Unable to load ${escapeHtml(path)}.</p>`;
+        return;
+      }
+      const payload = await response.json();
+      state.activeVaultPath = payload.path || path;
+      if (state.onboarding.active) {
+        state.onboarding.vaultOpened = true;
+      }
+      vaultPreviewEl.innerHTML = renderMarkdown(payload.content || "");
+      renderVaultFileList();
+      renderOnboarding();
+    } catch (_err) {
+      vaultPreviewEl.innerHTML = `<p>Unable to load ${escapeHtml(path)}.</p>`;
+    }
+  }
+
+  function tickClock() {
+    const now = new Date();
+    hudClockEl.textContent = now.toLocaleTimeString();
+  }
+
+  function startFocus() {
+    state.focusEndMs = Date.now() + FOCUS_MS;
+    hudMessageEl.textContent = "Focus sprint running";
+    focusStartEl.textContent = "Running";
+    focusStartEl.disabled = true;
+    if (state.focusInterval) clearInterval(state.focusInterval);
+    state.focusInterval = setInterval(tickFocus, 1000);
+    tickFocus();
+  }
+
+  function resetFocus() {
+    state.focusEndMs = null;
+    focusStartEl.textContent = "Start";
+    focusStartEl.disabled = false;
+    hudMessageEl.textContent = "Immersive mode: active";
+    focusTimeEl.textContent = "25:00";
+    focusBarEl.style.width = "0%";
+    if (state.focusInterval) {
+      clearInterval(state.focusInterval);
+      state.focusInterval = null;
+    }
+  }
+
+  function tickFocus() {
+    if (!state.focusEndMs) return;
+    const remaining = state.focusEndMs - Date.now();
+    if (remaining <= 0) {
+      append("Focus sprint complete. Log your result with done <task> -- <result>.", "system");
+      resetFocus();
+      return;
+    }
+    const seconds = Math.floor(remaining / 1000);
+    const mm = String(Math.floor(seconds / 60)).padStart(2, "0");
+    const ss = String(seconds % 60).padStart(2, "0");
+    focusTimeEl.textContent = `${mm}:${ss}`;
+    const elapsedPct = Math.round(((FOCUS_MS - remaining) / FOCUS_MS) * 100);
+    focusBarEl.style.width = `${Math.min(100, Math.max(0, elapsedPct))}%`;
+  }
+
+  function setupTabs() {
+    const buttons = Array.from(document.querySelectorAll(".tab-btn"));
+    buttons.forEach((button) => {
+      button.addEventListener("click", () => {
+        setActiveTab(button.dataset.tab);
+      });
+    });
+  }
+
+  function connect() {
+    if (state.ws && (state.ws.readyState === WebSocket.OPEN || state.ws.readyState === WebSocket.CONNECTING)) {
+      return;
+    }
+    const wsUrl = `ws://${window.location.host}/ws`;
+    append("Connecting to The Compound...", "system");
+    state.ws = new WebSocket(wsUrl);
+
+    state.ws.onopen = () => {
+      setConnection(true, `Connected: ${wsUrl}`);
+      fetchPulse();
+      sendLoginName();
+    };
+
+    state.ws.onmessage = (event) => {
+      const message = event.data;
+
+      if (message === "Enter your character name:" && state.login.requested && !state.login.nameSent) {
+        sendLoginName();
+        return;
+      }
+      if (message.includes("already in use")) {
+        append(message, "error");
+        try {
+          state.ws.close();
+        } catch (_err) {}
+        showLogin(`${state.login.profile} is already online. Choose the other profile or refresh after they leave.`);
+        return;
+      }
+      if (message.startsWith("PROMPT:")) {
+        promptEl.textContent = message.slice(7);
+        return;
+      }
+      if (message === "CLEAR:") {
+        output.innerHTML = "";
+        return;
+      }
+      if (message.startsWith("STATE:")) {
+        try {
+          state.players = JSON.parse(message.slice(6));
+          renderPlayers();
+        } catch (_err) {}
+        return;
+      }
+      if (message.startsWith("DIR:")) {
+        try {
+          state.dir = JSON.parse(message.slice(4));
+          renderDirectory();
+        } catch (_err) {}
+        return;
+      }
+      if (message.startsWith("PULSE:")) {
+        try {
+          state.pulse = JSON.parse(message.slice(6));
+          renderPulse();
+        } catch (_err) {}
+        return;
+      }
+
+      let kind = "";
+      if (message.includes("says,") || message.includes("tells you,")) kind = "chat";
+      else if (message.includes("[ ") && message.includes(" ]")) kind = "room";
+      else if (message.includes("Unknown command") || message.includes("Cannot find") || message.includes("No such")) kind = "error";
+      else if (message.includes("The Compound") || message.includes("Connected")) kind = "system";
+      append(message, kind);
+      if (message.includes("Connected to The Compound")) {
+        state.login.connected = true;
+        hudMessageEl.textContent = `${state.login.profile} online`;
+        maybeStartOnboarding();
+      }
+    };
+
+    state.ws.onclose = () => {
+      setConnection(false, "Disconnected - refresh to reconnect");
+      append("Connection closed.", "system");
+      state.players = [];
+      state.login.connected = false;
+      state.login.nameSent = false;
+      renderPlayers();
+    };
+
+    state.ws.onerror = () => {
+      setConnection(false, "Connection error");
+      append("WebSocket error.", "error");
+    };
+  }
+
+  function attachEvents() {
+    cmdInput.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter") return;
+      const text = cmdInput.value.trim();
+      if (!text) return;
+      runCommand(text);
+      cmdInput.value = "";
+    });
+
+    document.querySelectorAll(".chip").forEach((button) => {
+      button.addEventListener("click", () => {
+        runCommand(button.dataset.cmd);
+        cmdInput.focus();
+      });
+    });
+
+    profileButtons.forEach((button) => {
+      button.addEventListener("click", () => chooseProfile(button.dataset.profile));
+    });
+
+    loginOnboardingEl.addEventListener("change", () => {
+      state.login.showOnboarding = loginOnboardingEl.checked;
+      persistLoginPreferences();
+    });
+
+    document.addEventListener("click", (event) => {
+      if (!loginOverlayEl.hidden || !onboardingOverlayEl.hidden) return;
+      if (event.target.closest("button,input,textarea,select,a")) return;
+      cmdInput.focus();
+    });
+
+    vaultFilterEl.addEventListener("input", renderVaultFileList);
+    document.getElementById("vault-refresh").addEventListener("click", fetchVaultIndex);
+
+    vaultFilesEl.addEventListener("click", (event) => {
+      const target = event.target.closest("li[data-path]");
+      if (!target) return;
+      const path = target.getAttribute("data-path");
+      if (!path) return;
+      openVaultFile(path);
+    });
+
+    focusStartEl.addEventListener("click", startFocus);
+    focusResetEl.addEventListener("click", resetFocus);
+
+    tourOpenEl.addEventListener("click", () => {
+      state.login.showOnboarding = true;
+      loginOnboardingEl.checked = true;
+      persistLoginPreferences();
+      startOnboarding(true);
+    });
+
+    onboardingActionEl.addEventListener("click", () => {
+      const cmd = onboardingActionEl.dataset.command;
+      if (!cmd) return;
+      runCommand(cmd);
+      minimizeOnboarding();
+    });
+
+    onboardingNextEl.addEventListener("click", advanceOnboarding);
+    onboardingStripNextEl.addEventListener("click", advanceOnboarding);
+    onboardingStripShowEl.addEventListener("click", showOnboardingFull);
+    onboardingSkipEl.addEventListener("click", () => stopOnboarding(true));
+  }
+
+  function bootstrap() {
+    resetHudStorageFromUrl();
+    loadLoginPreferences();
+    setupTabs();
+    attachEvents();
+    connect();
+    tickClock();
+    setInterval(tickClock, 1000);
+    fetchPulse();
+    fetchVaultIndex();
+    setInterval(fetchPulse, 20000);
+    setInterval(fetchVaultIndex, 60000);
+  }
+
+  bootstrap();
+</script>
+</body>
+</html>
