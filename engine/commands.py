@@ -13,6 +13,7 @@ from board import (
     complete_work,
     load_board,
     mark_priority,
+    move_item,
     render_board,
     set_mode,
     start_work,
@@ -72,6 +73,26 @@ def handle(player: Player, world: World, raw: str) -> str:
         _log_board_event(world, "task_prioritized", player, {"item": item})
         _trigger_sync()
         return f"Marked PRIORITY: {item['title']}\n\n{render_board(board, player.name, _online_players(world))}"
+
+    if cmd in ("plan", "planned"):
+        if not args:
+            return "Plan what?"
+        board, item = move_item(board_path, args, "refined", player.name)
+        if not item:
+            return f"No board item matching: {args}"
+        _log_board_event(world, "task_planned", player, {"item": item})
+        _trigger_sync()
+        return f"Moved to PLAN: {item['title']}\n\n{render_board(board, player.name, _online_players(world))}"
+
+    if cmd == "ready":
+        if not args:
+            return "Mark what ready?"
+        board, item = move_item(board_path, args, "planned", player.name)
+        if not item:
+            return f"No board item matching: {args}"
+        _log_board_event(world, "task_readied", player, {"item": item})
+        _trigger_sync()
+        return f"Moved to READY: {item['title']}\n\n{render_board(board, player.name, _online_players(world))}"
 
     if cmd in ("solo", "shared", "share"):
         if not args:
@@ -363,6 +384,8 @@ def _help() -> str:
         "Commands:\n"
         "  board                — Show the Operational Board\n"
         "  add <item>           — Add an item to RAW\n"
+        "  plan <item>          — Move an idea into PLAN\n"
+        "  ready <item>         — Move a plan into READY\n"
         "  working on <item>    — Move item to IN PROGRESS and claim it\n"
         "  priority <item>      — Mark an item as priority\n"
         "  solo <item>          — Mark item as owner-only\n"

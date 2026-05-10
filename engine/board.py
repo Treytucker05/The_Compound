@@ -16,6 +16,13 @@ from pathlib import Path
 COLUMNS = ("raw", "refined", "planned", "in_progress", "done")
 DEFAULT_MODE = "SHARED"
 DEFAULT_BOARD_PATH = Path(__file__).parent.parent / "data" / "board.json"
+COLUMN_LABELS = {
+    "raw": "IDEAS",
+    "refined": "PLAN",
+    "planned": "READY",
+    "in_progress": "DOING",
+    "done": "DONE",
+}
 
 
 def utc_now() -> str:
@@ -160,6 +167,44 @@ def start_work(path: Path, query: str, actor: str) -> tuple[dict, dict]:
     item["updated_at"] = utc_now()
     board["columns"]["in_progress"].append(item)
     _record_new(board, f"{actor} started: {item['title']}")
+    save_board(path, board)
+    return board, item
+
+
+def move_item(path: Path, query: str, target_column: str, actor: str, note: str = "") -> tuple[dict, dict | None]:
+    path = resolve_board_path(path)
+    if target_column not in COLUMNS:
+        return load_board(path), None
+
+    board = load_board(path)
+    found = find_item(board, query)
+    if not found:
+        return board, None
+
+    source_column, item = found
+    if source_column != target_column:
+        board["columns"][source_column].remove(item)
+
+    item["updated_at"] = utc_now()
+    if target_column == "in_progress":
+        item["owner"] = actor
+        item["started_at"] = item.get("started_at") or utc_now()
+        item.pop("completed_at", None)
+        item.pop("completed_by", None)
+        item.pop("completion_note", None)
+    elif target_column == "done":
+        item["completed_at"] = item.get("completed_at") or utc_now()
+        item["completed_by"] = actor
+        if note.strip():
+            item["completion_note"] = note.strip()
+    else:
+        item.pop("completed_at", None)
+        item.pop("completed_by", None)
+        item.pop("completion_note", None)
+
+    if source_column != target_column:
+        board["columns"][target_column].append(item)
+    _record_new(board, f"{actor} moved: {item['title']} -> {COLUMN_LABELS.get(target_column, target_column)}")
     save_board(path, board)
     return board, item
 

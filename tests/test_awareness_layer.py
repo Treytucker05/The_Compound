@@ -9,6 +9,7 @@ ENGINE = ROOT / "engine"
 sys.path.insert(0, str(ENGINE))
 
 import server
+import commands
 from board import (
     active_items_for_actor,
     add_item,
@@ -101,6 +102,28 @@ class AwarenessLayerTests(unittest.TestCase):
             titles = [item["title"] for item in active_items_for_actor(board, "Trey")]
 
             self.assertEqual(titles, ["Trey implementation", "Shared ready card"])
+
+    def test_plan_and_ready_commands_move_cards_through_board_pipeline(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "board.json"
+            _board, item = add_item(path, "Bridge board actions to chat", "Trey")
+            world = DummyWorld(Path(tmp), board_path=path)
+            player = Player("Trey")
+            original_vault_sync = commands.vault_sync
+            commands.vault_sync = lambda *args, **kwargs: None
+            try:
+                plan_output = handle(player, world, f"plan {item['title']}")
+                ready_output = handle(player, world, f"ready {item['title']}")
+            finally:
+                commands.vault_sync = original_vault_sync
+
+            board = load_board(path)
+            self.assertEqual(board["columns"]["raw"], [])
+            self.assertEqual(board["columns"]["refined"], [])
+            self.assertEqual(board["columns"]["planned"][0]["id"], item["id"])
+            self.assertIn("Moved to PLAN", plan_output)
+            self.assertIn("Moved to READY", ready_output)
+            self.assertEqual([event[0] for event in world.board_events], ["task_planned", "task_readied"])
 
     def test_missions_parse_current_stack_and_command_renders_it(self):
         with tempfile.TemporaryDirectory() as tmp:

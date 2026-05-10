@@ -88,6 +88,19 @@ class VisualBoardTests(unittest.TestCase):
         )
         self.assertIn("Cut for v1", payload["guide_prompt_template"])
 
+    def test_board_overlay_runs_primary_actions_through_command_chat(self):
+        html = (ROOT / "engine" / "static" / "index.html").read_text(encoding="utf-8")
+
+        self.assertIn("function runBoardCommand", html)
+        self.assertIn("runCommand(command)", html)
+        self.assertIn("function boardCommandForForward", html)
+        self.assertIn('data-board-action="command"', html)
+        self.assertIn("runBoardCommand(`add ${title}`)", html)
+        self.assertIn("return `plan ${title}`", html)
+        self.assertIn("return `ready ${title}`", html)
+        self.assertIn("return `working on ${title}`", html)
+        self.assertIn("return `done ${title} -- completed from board`", html)
+
 
 if __name__ == "__main__":
     unittest.main()

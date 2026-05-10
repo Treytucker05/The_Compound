@@ -760,6 +760,10 @@ def summarize_presence_action(raw: str, player: Player, previous_room_id: str | 
         return f"moved to {room_path_label(player)}"
     if cmd == "working":
         return f"working on {args[3:].strip() or 'a task'}"[:80]
+    if cmd in ("plan", "planned"):
+        return f"planned {args or 'a task'}"[:80]
+    if cmd == "ready":
+        return f"readied {args or 'a task'}"[:80]
     if cmd == "done":
         return "logged a completion"
     if cmd == "add":
@@ -947,6 +951,9 @@ async def mud_handler(websocket):
                     "reply",
                     "resolve",
                     "priority",
+                    "plan",
+                    "planned",
+                    "ready",
                     "solo",
                     "shared",
                     "share",

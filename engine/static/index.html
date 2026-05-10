@@ -2906,6 +2906,10 @@
     return div.innerHTML;
   }
 
+  function escapeAttr(text) {
+    return escapeHtml(text).replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+  }
+
   function append(text, kind = "") {
     const node = document.createElement("div");
     node.textContent = text;
@@ -3582,6 +3586,24 @@
     return null;
   }
 
+  function boardCommandForForward(item, targetColumn) {
+    const title = String(item.title || "").trim();
+    if (!title) return "";
+    if (targetColumn === "refined") {
+      return `plan ${title}`;
+    }
+    if (targetColumn === "planned") {
+      return `ready ${title}`;
+    }
+    if (targetColumn === "in_progress") {
+      return `working on ${title}`;
+    }
+    if (targetColumn === "done") {
+      return `done ${title} -- completed from board`;
+    }
+    return "";
+  }
+
   function boardGateText(item) {
     const gate = item.gate_status || {};
     const missing = Array.isArray(gate.missing) ? gate.missing : [];
@@ -3669,8 +3691,9 @@
     const updated = formatBoardDate(item.updated_at);
     const updatedPill = updated ? `<span class="board-pill">${escapeHtml(updated)}</span>` : "";
     const forward = boardForwardTarget(columnId);
+    const forwardCommand = forward ? boardCommandForForward(item, forward.column) : "";
     const forwardButton = forward
-      ? `<button class="board-mini-btn primary" type="button" data-board-action="move" data-target-column="${forward.column}" data-id="${escapeHtml(item.id || "")}" title="${escapeHtml(forward.title)}" aria-label="${escapeHtml(forward.title)}">${forward.label}</button>`
+      ? `<button class="board-mini-btn primary" type="button" data-board-action="command" data-board-command="${escapeAttr(forwardCommand)}" data-id="${escapeAttr(item.id || "")}" title="${escapeAttr(`${forward.title} Runs command: ${forwardCommand}`)}" aria-label="${escapeAttr(`${forward.title} Runs command: ${forwardCommand}`)}">${forward.label}</button>`
       : "";
     const guideTitle = "Open guiding questions and copy an LLM prompt for this card.";
     const guideButton = `<button class="board-mini-btn" type="button" data-board-action="guide" data-id="${escapeHtml(item.id || "")}" data-testid="board-guide-button" title="${guideTitle}" aria-label="${guideTitle}">Guide</button>`;
@@ -3724,9 +3747,15 @@
     }).join("");
   }
 
+  function runBoardCommand(command) {
+    if (!command) return;
+    runCommand(command);
+    setBoardStatus(`Sent to command chat: ${command}`);
+    cmdInput.focus();
+  }
+
   async function addBoardTask(title) {
-    await boardRequest("/api/board/add", { title, column: "raw" });
-    setBoardStatus("Task added.");
+    runBoardCommand(`add ${title}`);
   }
 
   async function updateBoardTask(id, title) {
@@ -4652,6 +4681,8 @@
           if (targetColumn) {
             await moveBoardTask(id, targetColumn);
           }
+        } else if (action === "command") {
+          runBoardCommand(actionButton.dataset.boardCommand || "");
         } else if (action === "delete") {
           const confirmed = window.confirm("Delete this board card?");
           if (confirmed) {
