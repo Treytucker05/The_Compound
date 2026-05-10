@@ -75,6 +75,13 @@ def handle(player: Player, world: World, raw: str) -> str:
     if cmd == "add":
         if not args:
             return "Add what?"
+        if args.lower() == "spark" or args.lower().startswith("spark "):
+            spark_text = args[5:].strip()
+            if not spark_text:
+                return "Use: add spark <raw thought>"
+            sparks, item = add_spark(sparks_path, spark_text, player.name)
+            _log_board_event(world, "spark_added", player, {"spark": item})
+            return f"Spark captured: {item['text']}\n\n{render_sparks(sparks)}"
         board, item = add_item(board_path, args, player.name)
         _log_board_event(world, "task_added", player, {"item": item})
         _trigger_sync()
@@ -412,6 +419,7 @@ def _help() -> str:
         "Commands:\n"
         "  board                — Show the Operational Board\n"
         "  spark <thought>      — Capture a raw pre-board thought\n"
+        "  add spark <thought>  — Same as spark <thought>\n"
         "  sparks               — Show open Spark Inbox thoughts\n"
         "  promote <spark> to idea — Move a spark into board Ideas\n"
         "  add <item>           — Add an item to RAW\n"

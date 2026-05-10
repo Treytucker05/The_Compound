@@ -49,6 +49,23 @@ class SparkInboxTests(unittest.TestCase):
             self.assertEqual(load_board(board_path)["columns"]["raw"], [])
             self.assertIn("Spark Inbox", render_sparks(sparks))
 
+    def test_add_spark_command_alias_persists_outside_the_board(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            sparks_path = root / "sparks.json"
+            board_path = root / "board.json"
+            world = DummyWorld(root, board_path=board_path, sparks_path=sparks_path)
+            player = Player("Trey")
+
+            output = handle(player, world, "add spark maybe add a calendar room")
+
+            sparks = load_sparks(sparks_path)
+            open_items = open_sparks(sparks)
+            self.assertEqual(len(open_items), 1)
+            self.assertEqual(open_items[0]["text"], "maybe add a calendar room")
+            self.assertEqual(load_board(board_path)["columns"]["raw"], [])
+            self.assertIn("Spark captured", output)
+
     def test_promote_command_moves_a_spark_to_board_ideas(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
