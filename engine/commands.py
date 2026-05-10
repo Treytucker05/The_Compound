@@ -4,9 +4,11 @@ Track B — COMPOUND_APPROACH World Engine
 """
 
 from datetime import datetime, timezone
+from pathlib import Path
 
 from board import (
     add_item,
+    block_item,
     complete_current_work,
     complete_work,
     load_board,
@@ -14,7 +16,9 @@ from board import (
     render_board,
     set_mode,
     start_work,
+    unblock_item,
 )
+from missions import load_missions, render_missions
 from radio import ask_question, load_radio, render_inbox, reply_to_thread, resolve_thread
 from vault_sync import sync as vault_sync
 from world import Player, World
@@ -79,6 +83,28 @@ def handle(player: Player, world: World, raw: str) -> str:
         _log_board_event(world, "task_mode_changed", player, {"item": item, "mode": mode})
         _trigger_sync()
         return f"Marked {mode}: {item['title']}\n\n{render_board(board, player.name, _online_players(world))}"
+
+    if cmd == "blocked":
+        title, reason = _parse_blocked_args(args)
+        if not title or not reason:
+            return "Use: blocked <item> -- <reason>"
+        board, item = block_item(board_path, title, reason, player.name)
+        if not item:
+            return f"No board item matching: {title}"
+        _log_board_event(world, "task_blocked", player, {"item": item, "reason": reason})
+        _trigger_sync()
+        return f"Blocked: {item['title']} -- {item.get('blocked_reason', '')}\n\n{render_board(board, player.name, _online_players(world))}"
+
+    if cmd in ("unblocked", "unblock"):
+        title, note = _parse_optional_note(args)
+        if not title:
+            return "Use: unblocked <item> -- <note optional>"
+        board, item = unblock_item(board_path, title, note, player.name)
+        if not item:
+            return f"No board item matching: {title}"
+        _log_board_event(world, "task_unblocked", player, {"item": item, "note": note})
+        _trigger_sync()
+        return f"Unblocked: {item['title']}\n\n{render_board(board, player.name, _online_players(world))}"
 
     if cmd == "done":
         if not args:
@@ -214,6 +240,9 @@ def handle(player: Player, world: World, raw: str) -> str:
     if cmd == "projects":
         return world.projects()
 
+    if cmd in ("mission", "missions", "quests"):
+        return render_missions(load_missions(_world_root(world)))
+
     if cmd == "warp":
         if not args:
             return "Warp where? Type 'projects' to see active directories."
@@ -338,8 +367,11 @@ def _help() -> str:
         "  priority <item>      — Mark an item as priority\n"
         "  solo <item>          — Mark item as owner-only\n"
         "  shared <item>        — Mark item as handoff-friendly\n"
+        "  blocked <item> -- <reason> — Mark a board item blocked\n"
+        "  unblocked <item> -- <note> — Clear a board item block\n"
         "  done <item> -- <note> — Move item to DONE and log what happened\n"
         "  next                 — Show the board with next best action\n"
+        "  missions             — Show the current shared mission stack\n"
         "  ask <who> <question> — Send a Radio Inbox question\n"
         "  inbox / radio        — Show your Radio Inbox\n"
         "  reply <id> <message> — Reply to a radio thread\n"
@@ -385,6 +417,24 @@ def _parse_done_args(args: str) -> tuple[str | None, str]:
     return None, args.strip()
 
 
+def _parse_blocked_args(args: str) -> tuple[str, str]:
+    text = args.strip()
+    if text.lower().startswith("on "):
+        text = text[3:].strip()
+    title, reason = _parse_optional_note(text)
+    return title, reason
+
+
+def _parse_optional_note(args: str) -> tuple[str, str]:
+    if " -- " in args:
+        title, note = args.split(" -- ", 1)
+        return title.strip(), note.strip()
+    if " - " in args:
+        title, note = args.split(" - ", 1)
+        return title.strip(), note.strip()
+    return args.strip(), ""
+
+
 def _parse_target_message(args: str) -> tuple[str, str]:
     parts = args.strip().split(None, 1)
     if len(parts) < 2:
@@ -413,6 +463,10 @@ def _trigger_sync():
         vault_sync()
     except Exception:
         pass
+
+
+def _world_root(world: World) -> Path:
+    return Path(getattr(world, "root", Path(__file__).parent.parent))
 
 
 def _log_board_event(world: World, event_type: str, player: Player, data: dict):

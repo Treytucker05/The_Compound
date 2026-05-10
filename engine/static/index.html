@@ -723,6 +723,24 @@
     color: var(--good);
   }
 
+  .list li.needs-attention {
+    border-color: rgba(255, 209, 102, 0.46);
+    background: rgba(255, 209, 102, 0.08);
+  }
+
+  .list li.is-blocked {
+    border-color: rgba(255, 118, 109, 0.48);
+    background: rgba(255, 118, 109, 0.08);
+  }
+
+  .item-meta {
+    display: block;
+    margin-top: 4px;
+    color: var(--text-dim);
+    font-size: 10px;
+    line-height: 1.35;
+  }
+
   .feed-entry {
     position: relative;
     padding-left: 22px !important;
@@ -850,6 +868,26 @@
     grid-template-columns: minmax(0, 1fr) auto auto;
     gap: 6px;
     margin-top: 9px;
+  }
+
+  .tab-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 18px;
+    height: 18px;
+    margin-left: 6px;
+    padding: 0 5px;
+    border-radius: 999px;
+    background: rgba(255, 209, 102, 0.18);
+    border: 1px solid rgba(255, 209, 102, 0.42);
+    color: var(--accent-2);
+    font-size: 10px;
+    line-height: 1;
+  }
+
+  .tab-badge[hidden] {
+    display: none;
   }
 
   .btn {
@@ -1641,6 +1679,23 @@
     background: rgba(0, 0, 0, 0.18);
   }
 
+  .board-pill.blocked {
+    border-color: rgba(255, 118, 109, 0.52);
+    background: rgba(255, 118, 109, 0.1);
+    color: #ffaaa3;
+  }
+
+  .board-blocked {
+    margin-top: 7px;
+    border: 1px solid rgba(255, 118, 109, 0.34);
+    border-radius: 6px;
+    padding: 6px 7px;
+    color: #ffbeb8;
+    background: rgba(255, 118, 109, 0.08);
+    font-size: 11px;
+    line-height: 1.4;
+  }
+
   .board-task-actions {
     display: flex;
     flex-wrap: wrap;
@@ -2001,7 +2056,7 @@
     </div>
     <div id="tabs">
       <button class="tab-btn active" data-tab="ops">Dashboard</button>
-      <button class="tab-btn" data-tab="radio" data-testid="radio-tab">Radio</button>
+      <button class="tab-btn" data-tab="radio" data-testid="radio-tab">Radio <span id="radio-tab-badge" class="tab-badge" hidden>0</span></button>
       <button class="tab-btn" data-tab="vault">Vault</button>
       <button class="tab-btn" data-tab="world">World</button>
     </div>
@@ -2034,6 +2089,42 @@
             <div id="momentum-bar"></div>
           </div>
           <div class="mono-dim" style="margin-top:8px;" id="next-action">Next action: (none)</div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-head">Needs Attention</div>
+        <div class="section-body">
+          <ul class="list" id="needs-attention-list" data-testid="needs-attention-list">
+            <li>No open asks need you.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-head">My Active Items</div>
+        <div class="section-body">
+          <ul class="list" id="my-active-list" data-testid="my-active-list">
+            <li>No active items yet.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-head">Blocked</div>
+        <div class="section-body">
+          <ul class="list" id="blocked-list" data-testid="blocked-list">
+            <li>Nothing blocked.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-head">Missions</div>
+        <div class="section-body">
+          <ul class="list" id="mission-list" data-testid="mission-list">
+            <li>No missions loaded.</li>
+          </ul>
         </div>
       </div>
 
@@ -2243,6 +2334,10 @@
   const momentumLabelEl = document.getElementById("momentum-label");
   const momentumBarEl = document.getElementById("momentum-bar");
   const nextActionEl = document.getElementById("next-action");
+  const needsAttentionListEl = document.getElementById("needs-attention-list");
+  const myActiveListEl = document.getElementById("my-active-list");
+  const blockedListEl = document.getElementById("blocked-list");
+  const missionListEl = document.getElementById("mission-list");
   const questListEl = document.getElementById("quest-list");
   const feedListEl = document.getElementById("feed-list");
 
@@ -2252,6 +2347,7 @@
   const radioStatusEl = document.getElementById("radio-status");
   const radioRefreshEl = document.getElementById("radio-refresh");
   const radioThreadListEl = document.getElementById("radio-thread-list");
+  const radioTabBadgeEl = document.getElementById("radio-tab-badge");
 
   const onlineListEl = document.getElementById("online-list");
   const directoryPathEl = document.getElementById("directory-path");
@@ -2609,6 +2705,7 @@
     persistLoginPreferences();
     renderLogin();
     renderRadioInbox();
+    renderAwareness();
 
     if (!state.ws || state.ws.readyState === WebSocket.CLOSED || state.ws.readyState === WebSocket.CLOSING) {
       connect();
@@ -2764,6 +2861,72 @@
     return { score, pct };
   }
 
+  function profileMatches(value, actor) {
+    return String(value || "").toLowerCase() === String(actor || "").toLowerCase();
+  }
+
+  function threadNeedsAttention(thread, actor) {
+    const actorLower = String(actor || "").toLowerCase();
+    if (!actorLower || thread.status !== "open") return false;
+    const participants = [thread.from, thread.to].map((value) => String(value || "").toLowerCase());
+    if (!participants.includes(actorLower)) return false;
+    return String(thread.latest_from || "").toLowerCase() !== actorLower;
+  }
+
+  function attentionThreadsForActor() {
+    const actor = boardActor();
+    const actorSpecific = state.radio?.actor && profileMatches(state.radio.actor, actor)
+      ? state.radio.needs_attention_threads
+      : null;
+    const threads = actorSpecific || state.pulse?.radio?.open_threads || [];
+    return threads.filter((thread) => threadNeedsAttention(thread, actor));
+  }
+
+  function activeItemsForActor() {
+    const actor = boardActor();
+    const items = state.pulse?.active_items || [];
+    return items.filter((item) => {
+      const mode = String(item.mode || "SHARED").toUpperCase();
+      return profileMatches(item.owner, actor) || mode === "SHARED";
+    });
+  }
+
+  function updateRadioBadge(count) {
+    radioTabBadgeEl.hidden = count <= 0;
+    radioTabBadgeEl.textContent = String(count);
+  }
+
+  function renderAwarenessList(target, items, emptyText, renderer) {
+    target.innerHTML = items.length
+      ? items.map(renderer).join("")
+      : `<li>${escapeHtml(emptyText)}</li>`;
+  }
+
+  function renderAwareness() {
+    const attention = attentionThreadsForActor();
+    updateRadioBadge(attention.length);
+    renderAwarenessList(needsAttentionListEl, attention, "No open asks need you.", (thread) => {
+      const latest = thread.latest_text || thread.text || "Open radio thread";
+      return `<li class="needs-attention"><strong>#${escapeHtml(thread.id || "")}</strong> ${escapeHtml(latest)}<span class="item-meta">from ${escapeHtml(thread.latest_from || thread.from || "radio")}</span></li>`;
+    });
+
+    renderAwarenessList(myActiveListEl, activeItemsForActor(), "No active items yet.", (item) => {
+      const owner = item.owner || item.mode || "SHARED";
+      const blocked = item.blocked ? " | blocked" : "";
+      return `<li><strong>${escapeHtml(item.title || "Untitled item")}</strong><span class="item-meta">${escapeHtml(boardColumnLabel(item.column || ""))} | ${escapeHtml(owner)}${blocked}</span></li>`;
+    });
+
+    renderAwarenessList(blockedListEl, state.pulse?.blocked_items || [], "Nothing blocked.", (item) => {
+      const reason = item.blocked_reason || "blocked";
+      return `<li class="is-blocked"><strong>${escapeHtml(item.title || "Untitled item")}</strong><span class="item-meta">${escapeHtml(reason)}${item.blocked_by ? ` | ${escapeHtml(item.blocked_by)}` : ""}</span></li>`;
+    });
+
+    renderAwarenessList(missionListEl, state.pulse?.missions || [], "No missions loaded.", (mission) => {
+      const marker = mission.done ? "[x]" : "[ ]";
+      return `<li class="${mission.done ? "is-done" : ""}"><span class="quest-marker">${marker}</span>${escapeHtml(mission.title || "Untitled mission")}</li>`;
+    });
+  }
+
   function renderPulse() {
     const pulse = state.pulse || {};
     const counts = pulse.counts || {};
@@ -2801,6 +2964,7 @@
       });
     }
     feedListEl.innerHTML = feed.length ? feed.join("") : "<li>No activity yet.</li>";
+    renderAwareness();
     renderOnboarding();
   }
 
@@ -2841,6 +3005,7 @@
       renderPulse();
     }
     renderRadioInbox();
+    renderAwareness();
   }
 
   async function radioRequest(path, params = {}) {
@@ -3185,6 +3350,10 @@
     const mode = escapeHtml(item.mode || "SHARED");
     const owner = item.owner ? `<span class="board-pill">${escapeHtml(item.owner)}</span>` : "";
     const priority = item.priority ? `<span class="board-pill">Priority</span>` : "";
+    const blocked = item.blocked ? `<span class="board-pill blocked">Blocked</span>` : "";
+    const blockedReason = item.blocked
+      ? `<div class="board-blocked">Blocked: ${escapeHtml(item.blocked_reason || "blocked")}</div>`
+      : "";
     const updated = formatBoardDate(item.updated_at);
     const updatedPill = updated ? `<span class="board-pill">${escapeHtml(updated)}</span>` : "";
     const forward = boardForwardTarget(columnId);
@@ -3203,9 +3372,11 @@
           <span class="board-pill">${mode}</span>
           ${owner}
           ${priority}
+          ${blocked}
           ${updatedPill}
         </div>
         <div class="${boardGateClass(item)}">${escapeHtml(boardGateText(item))}</div>
+        ${blockedReason}
         ${renderBoardDetails(item)}
         <div class="board-task-actions">
           ${forwardButton}

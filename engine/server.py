@@ -21,10 +21,11 @@ from websockets.asyncio.server import serve
 
 sys.path.insert(0, str(Path(__file__).parent))
 
-from board import COLUMNS, add_item, load_board, save_board, utc_now
+from board import COLUMNS, active_items_for_actor, add_item, blocked_items, load_board, save_board, utc_now
 from commands import handle
+from missions import load_missions
 from quickstart import ensure_quickstart
-from radio import ask_question, load_radio, reply_to_thread, resolve_thread, summarize_radio
+from radio import ask_question, load_radio, needs_attention_threads, reply_to_thread, resolve_thread, summarize_radio
 from vault_sync import sync as vault_sync
 from world import ROOT_PATH, Player, World
 
@@ -245,10 +246,13 @@ def radio_payload(actor: str = "", include_resolved: bool = False) -> dict:
             if actor_lower not in participants:
                 continue
         threads.append(radio_thread_summary(thread))
+    attention = needs_attention_threads(radio, actor)
     return {
         "actor": actor or "portal",
         "radio": summarize_radio(radio),
         "threads": threads[-12:],
+        "needs_attention_count": len(attention),
+        "needs_attention_threads": attention[-8:],
         "pulse": build_pulse_payload(),
     }
 
@@ -373,6 +377,8 @@ def api_update_board_item(query: dict) -> tuple[int, dict]:
     why = query_value(query, "why")
     steps = query_value(query, "steps")
     acceptance = query_value(query, "acceptance")
+    blocked_reason = query_value(query, "blocked_reason")
+    unblocked_note = query_value(query, "unblocked_note")
 
     changed = []
     if title and title != item.get("title"):
@@ -399,6 +405,21 @@ def api_update_board_item(query: dict) -> tuple[int, dict]:
     if "acceptance" in query:
         item["acceptance"] = acceptance[:500]
         changed.append("acceptance")
+    if "blocked" in query:
+        blocked = query_bool(query, "blocked")
+        item["blocked"] = blocked
+        if blocked:
+            item["blocked_reason"] = blocked_reason[:500]
+            item["blocked_by"] = actor
+            item["blocked_at"] = utc_now()
+        else:
+            item.pop("blocked_reason", None)
+            item.pop("blocked_by", None)
+            item.pop("blocked_at", None)
+            item["unblocked_by"] = actor
+            item["unblocked_at"] = utc_now()
+            item["unblocked_note"] = unblocked_note[:500]
+        changed.append("blocked")
 
     if changed:
         item["updated_at"] = utc_now()
@@ -565,8 +586,19 @@ def build_pulse_payload() -> dict:
         "recent_events": read_event_tail(14),
         "quests": quests,
         "radio": radio,
+        "active_items": _pulse_active_items(board),
+        "blocked_items": blocked_items(board),
+        "missions": load_missions(ROOT_DIR),
         "generated_at": datetime.now(timezone.utc).isoformat(),
     }
+
+
+def _pulse_active_items(board: dict) -> list[dict]:
+    merged = {}
+    for actor in ("Trey", "Joe"):
+        for item in active_items_for_actor(board, actor):
+            merged[item["id"]] = item
+    return list(merged.values())
 
 
 def format_file_size(size: int) -> str:
@@ -731,6 +763,10 @@ def summarize_presence_action(raw: str, player: Player, previous_room_id: str | 
         return "checked the board"
     if cmd in ("ask", "reply", "resolve", "inbox", "radio"):
         return "used radio"
+    if cmd in ("blocked", "unblocked", "unblock"):
+        return "updated a block"
+    if cmd in ("mission", "missions", "quests"):
+        return "checked missions"
     if cmd == "say":
         return "spoke in room"
     if cmd == "tell":
@@ -910,6 +946,12 @@ async def mud_handler(websocket):
                     "shared",
                     "share",
                     "board",
+                    "blocked",
+                    "unblocked",
+                    "unblock",
+                    "mission",
+                    "missions",
+                    "quests",
                 )
             ):
                 await broadcast_state()

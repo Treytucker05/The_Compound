@@ -188,6 +188,28 @@ def summarize_radio(radio: dict) -> dict:
     }
 
 
+def needs_attention_threads(radio: dict, actor: str) -> list[dict]:
+    return [
+        _thread_summary(thread)
+        for thread in radio.get("threads", [])
+        if thread_needs_attention(thread, actor)
+    ]
+
+
+def thread_needs_attention(thread: dict, actor: str) -> bool:
+    actor_lower = actor.strip().lower()
+    if not actor_lower or thread.get("status") != "open":
+        return False
+    participants = {str(thread.get("from", "")).lower(), str(thread.get("to", "")).lower()}
+    if actor_lower not in participants:
+        return False
+    messages = thread.get("messages", [])
+    if not messages:
+        return False
+    latest_from = str(messages[-1].get("from", "")).lower()
+    return latest_from != actor_lower
+
+
 def resolve_radio_path(path: Path | str | None) -> Path:
     if path is None:
         return DEFAULT_RADIO_PATH

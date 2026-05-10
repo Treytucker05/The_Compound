@@ -106,6 +106,45 @@ def set_mode(path: Path, query: str, mode: str, actor: str) -> tuple[dict, dict 
     return board, item
 
 
+def block_item(path: Path, query: str, reason: str, actor: str) -> tuple[dict, dict | None]:
+    path = resolve_board_path(path)
+    board = load_board(path)
+    found = find_item(board, query)
+    if not found:
+        return board, None
+
+    _column, item = found
+    item["blocked"] = True
+    item["blocked_reason"] = reason.strip()[:500]
+    item["blocked_by"] = actor
+    item["blocked_at"] = utc_now()
+    item["updated_at"] = utc_now()
+    _record_new(board, f"{actor} blocked: {item['title']}")
+    save_board(path, board)
+    return board, item
+
+
+def unblock_item(path: Path, query: str, note: str, actor: str) -> tuple[dict, dict | None]:
+    path = resolve_board_path(path)
+    board = load_board(path)
+    found = find_item(board, query)
+    if not found:
+        return board, None
+
+    _column, item = found
+    item["blocked"] = False
+    item.pop("blocked_reason", None)
+    item.pop("blocked_by", None)
+    item.pop("blocked_at", None)
+    item["unblocked_by"] = actor
+    item["unblocked_at"] = utc_now()
+    item["unblocked_note"] = note.strip()[:500]
+    item["updated_at"] = utc_now()
+    _record_new(board, f"{actor} unblocked: {item['title']}")
+    save_board(path, board)
+    return board, item
+
+
 def start_work(path: Path, query: str, actor: str) -> tuple[dict, dict]:
     path = resolve_board_path(path)
     board = load_board(path)
@@ -195,6 +234,29 @@ def next_best_item(board: dict, actor: str | None = None) -> dict | None:
     return ready[0] if ready else None
 
 
+def active_items_for_actor(board: dict, actor: str) -> list[dict]:
+    actor_lower = actor.strip().lower()
+    results = []
+    for column in ("planned", "in_progress"):
+        for item in board.get("columns", {}).get(column, []):
+            owner = str(item.get("owner") or "").lower()
+            mode = str(item.get("mode") or DEFAULT_MODE).upper()
+            if owner == actor_lower or (mode == "SHARED" and not item.get("completed_at")):
+                results.append(_summary_item(item, column))
+    return results
+
+
+def blocked_items(board: dict) -> list[dict]:
+    results = []
+    for column in COLUMNS:
+        if column == "done":
+            continue
+        for item in board.get("columns", {}).get(column, []):
+            if item.get("blocked"):
+                results.append(_summary_item(item, column))
+    return results
+
+
 def render_board(board: dict, actor: str | None = None, online_players: list[str] | None = None) -> str:
     online_players = online_players or []
     next_item = next_best_item(board, actor)
@@ -275,9 +337,28 @@ def _format_item(item: dict, show_owner: bool = False, show_done_note: bool = Fa
         parts.append(f"[{item['mode']}]")
     if item.get("priority"):
         parts.append("[PRIORITY]")
+    if item.get("blocked"):
+        reason = item.get("blocked_reason") or "blocked"
+        parts.append(f"[BLOCKED: {reason}]")
     if show_done_note and item.get("completion_note"):
         parts.append(f"- {item['completion_note']}")
     return " ".join(parts)
+
+
+def _summary_item(item: dict, column: str) -> dict:
+    return {
+        "id": item.get("id", ""),
+        "title": item.get("title", "untitled"),
+        "column": column,
+        "owner": item.get("owner"),
+        "mode": item.get("mode", DEFAULT_MODE),
+        "priority": bool(item.get("priority")),
+        "blocked": bool(item.get("blocked")),
+        "blocked_reason": item.get("blocked_reason", ""),
+        "blocked_by": item.get("blocked_by", ""),
+        "blocked_at": item.get("blocked_at", ""),
+        "updated_at": item.get("updated_at", ""),
+    }
 
 
 def _normalize(value: str) -> str:

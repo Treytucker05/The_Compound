@@ -42,6 +42,9 @@ def sync(root: Path = None) -> bool:
                 parts.append(f"[{item['mode']}]")
             if item.get("priority"):
                 parts.append("[PRIORITY]")
+            if item.get("blocked"):
+                reason = item.get("blocked_reason") or "blocked"
+                parts.append(f"[BLOCKED: {reason}]")
             lines.append("- " + " ".join(parts))
         return lines
 
