@@ -979,7 +979,7 @@ async def process_request(connection, request):
     """Serve static client and lightweight JSON API routes."""
     parsed = urlparse(request.path or "/")
     path = parsed.path
-    query = parse_qs(parsed.query)
+    query = parse_qs(parsed.query, keep_blank_values=True)
 
     if path == "/":
         html_path = Path(__file__).parent / "static" / "index.html"

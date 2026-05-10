@@ -1,24 +1,25 @@
 # Operational Board
 
 > Auto-synced from `data/board.json`.  
-> Last sync: 2026-05-09 06:20:59
+> Last sync: 2026-05-10 03:01:20
 
 ## IN PROGRESS
 *(empty)*
 
 ## NEXT BEST ACTION
-*(none)*
+- Set up the Project Map
 
 ## NEW
-- board started: onboarding warmup
-- board completed: onboarding warmup
-- Joe started: browser verification
-- Trey completed: browser verification
+- Trey updated: Set up the Project Map
+- Trey updated: Set up the Project Map
+- Trey moved: Set up the Project Map -> Ideas
+- Trey updated: Set up the Project Map
+- Trey updated: Set up the Project Map
 
 ## PIPELINE
 
 ### RAW
-*(empty)*
+- Set up the Project Map [SHARED]
 
 ### REFINED
 *(empty)*
@@ -27,8 +28,7 @@
 *(empty)*
 
 ### DONE (last 5)
-- onboarding warmup (by board) — finished onboarding warmup
-- browser verification (by Trey) — browser gate passed
+*(empty)*
 
 ---
 

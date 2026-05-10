@@ -1632,6 +1632,50 @@
     font-size: 10px;
   }
 
+  .board-tag-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 7px;
+    min-width: 0;
+  }
+
+  .board-tag-label {
+    flex: 0 0 auto;
+    color: var(--text-dim);
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+  }
+
+  .board-tag-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    min-width: 0;
+  }
+
+  .board-tag-btn {
+    border: 1px solid rgba(83, 126, 116, 0.34);
+    border-radius: 999px;
+    background: rgba(3, 10, 9, 0.72);
+    color: var(--text-dim);
+    cursor: pointer;
+    font-size: 9px;
+    font-weight: 800;
+    padding: 3px 6px;
+    text-transform: uppercase;
+    transition: border-color 0.16s ease, background 0.16s ease, color 0.16s ease;
+  }
+
+  .board-tag-btn:hover,
+  .board-tag-btn.active {
+    border-color: rgba(57, 217, 145, 0.58);
+    background: rgba(57, 217, 145, 0.12);
+    color: var(--good);
+  }
+
   .board-gate {
     margin-top: 7px;
     color: var(--text-dim);
@@ -3225,7 +3269,7 @@
   function boardUrl(path, params = {}) {
     const url = new URL(path, window.location.origin);
     Object.entries(params).forEach(([key, value]) => {
-      if (value !== undefined && value !== null && value !== "") {
+      if (value !== undefined && value !== null) {
         url.searchParams.set(key, value);
       }
     });
@@ -3345,10 +3389,48 @@
     `;
   }
 
+  function boardTagForItem(item) {
+    const owner = String(item.owner || "").toLowerCase();
+    if (owner === "trey") return "trey";
+    if (owner === "joe") return "joe";
+    return "shared";
+  }
+
+  function boardTagLabel(tag) {
+    if (tag === "trey") return "Trey";
+    if (tag === "joe") return "Joe";
+    return "Shared";
+  }
+
+  function boardTagParams(tag) {
+    if (tag === "trey") {
+      return { owner: "Trey", mode: "SOLO" };
+    }
+    if (tag === "joe") {
+      return { owner: "Joe", mode: "SOLO" };
+    }
+    return { owner: "", mode: "SHARED" };
+  }
+
+  function renderBoardTagControls(item) {
+    const activeTag = boardTagForItem(item);
+    const id = escapeHtml(item.id || "");
+    return `
+      <div class="board-tag-row" aria-label="Card tag">
+        <span class="board-tag-label">Tag</span>
+        <div class="board-tag-options">
+          ${["shared", "trey", "joe"].map((tag) => {
+            const label = boardTagLabel(tag);
+            const active = tag === activeTag ? " active" : "";
+            return `<button class="board-tag-btn${active}" type="button" data-board-action="tag" data-board-tag="${tag}" data-id="${id}" aria-pressed="${active ? "true" : "false"}" title="Tag this card ${label}">${label}</button>`;
+          }).join("")}
+        </div>
+      </div>
+    `;
+  }
+
   function renderBoardTask(item, columnId) {
     const title = escapeHtml(item.title || "Untitled task");
-    const mode = escapeHtml(item.mode || "SHARED");
-    const owner = item.owner ? `<span class="board-pill">${escapeHtml(item.owner)}</span>` : "";
     const priority = item.priority ? `<span class="board-pill">Priority</span>` : "";
     const blocked = item.blocked ? `<span class="board-pill blocked">Blocked</span>` : "";
     const blockedReason = item.blocked
@@ -3368,9 +3450,8 @@
     return `
       <article class="board-task stage-${escapeHtml(columnId)}" draggable="true" data-id="${escapeHtml(item.id || "")}" data-testid="board-card">
         <div class="board-task-title" contenteditable="true" spellcheck="false" data-id="${escapeHtml(item.id || "")}">${title}</div>
+        ${renderBoardTagControls(item)}
         <div class="board-task-meta">
-          <span class="board-pill">${mode}</span>
-          ${owner}
           ${priority}
           ${blocked}
           ${updatedPill}
@@ -3426,6 +3507,11 @@
   async function updateBoardField(id, field, value) {
     await boardRequest("/api/board/update", { id, [field]: value });
     setBoardStatus("Card updated.");
+  }
+
+  async function tagBoardTask(id, tag) {
+    await boardRequest("/api/board/update", { id, ...boardTagParams(tag) });
+    setBoardStatus(`Tagged ${boardTagLabel(tag)}.`);
   }
 
   async function moveBoardTask(id, columnId) {
@@ -4326,6 +4412,11 @@
           state.activeGuideItemId = id;
           boardGuideCopyStatusEl.textContent = "";
           renderBoardGuide();
+        } else if (action === "tag") {
+          const tag = actionButton.dataset.boardTag;
+          if (tag) {
+            await tagBoardTask(id, tag);
+          }
         } else if (action === "move") {
           const targetColumn = actionButton.dataset.targetColumn;
           if (targetColumn) {
