@@ -111,6 +111,12 @@ class VisualBoardTests(unittest.TestCase):
         self.assertIn("function promoteSpark", html)
         self.assertIn("Spark Inbox", html)
 
+    def test_board_panel_hidden_rule_prevents_tab_bleed(self):
+        html = (ROOT / "engine" / "static" / "index.html").read_text(encoding="utf-8")
+
+        self.assertIn("#spark-panel[hidden]", html)
+        self.assertIn("#board-work-panel[hidden]", html)
+
 
 if __name__ == "__main__":
     unittest.main()
