@@ -1006,6 +1006,120 @@
     font-size: 12px;
   }
 
+  #agent-brief-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 130;
+    display: grid;
+    place-items: center;
+    background: rgba(2, 6, 5, 0.76);
+    backdrop-filter: blur(10px);
+    padding: 16px;
+  }
+
+  #agent-brief-overlay[hidden] {
+    display: none;
+  }
+
+  #agent-brief-card {
+    width: min(760px, 100%);
+    max-height: calc(100vh - 32px);
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    border: 1px solid var(--line-strong);
+    border-radius: 8px;
+    background:
+      linear-gradient(180deg, rgba(18, 40, 36, 0.98), rgba(6, 15, 13, 0.98)),
+      var(--bg-panel);
+    box-shadow: 0 24px 58px rgba(0, 0, 0, 0.5);
+    overflow: hidden;
+  }
+
+  #agent-brief-head {
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--line);
+    background: rgba(57, 217, 145, 0.1);
+  }
+
+  #agent-brief-head h2 {
+    margin-top: 3px;
+    font-size: 20px;
+    line-height: 1.15;
+  }
+
+  #agent-brief-kicker {
+    color: var(--good);
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+  }
+
+  #agent-brief-body {
+    overflow: auto;
+    padding: 14px;
+  }
+
+  .agent-brief-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 9px;
+    margin-bottom: 10px;
+  }
+
+  .agent-brief-stat {
+    border: 1px solid rgba(83, 126, 116, 0.3);
+    border-radius: 7px;
+    background: rgba(6, 14, 12, 0.72);
+    padding: 8px 9px;
+  }
+
+  .agent-brief-stat span {
+    display: block;
+    color: var(--text-dim);
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .agent-brief-stat strong {
+    display: block;
+    margin-top: 3px;
+    color: var(--text);
+    font-size: 12px;
+    overflow-wrap: anywhere;
+  }
+
+  #agent-brief-prompt {
+    margin-top: 10px;
+    max-height: 310px;
+    overflow: auto;
+    border: 1px solid rgba(83, 126, 116, 0.34);
+    border-radius: 7px;
+    background: rgba(3, 9, 8, 0.82);
+    color: var(--text-soft);
+    padding: 10px;
+    font-size: 11px;
+    line-height: 1.55;
+    white-space: pre-wrap;
+  }
+
+  #agent-brief-actions {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 12px 14px;
+    border-top: 1px solid var(--line);
+    background: rgba(5, 13, 12, 0.86);
+  }
+
+  #agent-brief-copy-status {
+    color: var(--text-dim);
+    font-size: 11px;
+  }
+
   #vault-grid {
     display: grid;
     grid-template-columns: minmax(170px, var(--vault-list-width, 32%)) 10px minmax(0, 1fr);
@@ -2088,6 +2202,7 @@
               </div>
             </div>
           </div>
+          <button class="btn btn-tour" id="agent-brief-open" data-testid="agent-brief-button" title="Open agent briefing">Agent Brief</button>
           <button class="btn btn-tour" id="tour-open" data-testid="guide-open" title="Open guide">Guide</button>
         </div>
       </div>
@@ -2335,6 +2450,41 @@
   </div>
 </div>
 
+<div id="agent-brief-overlay" data-testid="agent-brief-overlay" hidden>
+  <div id="agent-brief-card">
+    <div id="agent-brief-head">
+      <div id="agent-brief-kicker">Agent Briefing</div>
+      <h2 id="agent-brief-title">Worktree instructions</h2>
+    </div>
+    <div id="agent-brief-body">
+      <div class="agent-brief-grid">
+        <div class="agent-brief-stat">
+          <span>Worktree</span>
+          <strong id="agent-brief-worktree">-</strong>
+        </div>
+        <div class="agent-brief-stat">
+          <span>Branch</span>
+          <strong id="agent-brief-branch">-</strong>
+        </div>
+        <div class="agent-brief-stat">
+          <span>Dev HUD</span>
+          <strong id="agent-brief-dev">-</strong>
+        </div>
+        <div class="agent-brief-stat">
+          <span>Live HUD</span>
+          <strong id="agent-brief-live">-</strong>
+        </div>
+      </div>
+      <pre id="agent-brief-prompt" data-testid="agent-brief-prompt"></pre>
+    </div>
+    <div id="agent-brief-actions">
+      <button class="btn" id="agent-brief-copy" type="button">Copy Agent Prompt</button>
+      <button class="btn" id="agent-brief-close" type="button">Enter Compound</button>
+      <span id="agent-brief-copy-status" aria-live="polite"></span>
+    </div>
+  </div>
+</div>
+
 <div id="onboarding-overlay" data-testid="onboarding-overlay" hidden>
   <div id="onboarding-card">
     <div id="onboarding-head">Interactive Onboarding</div>
@@ -2410,6 +2560,17 @@
   const focusBarEl = document.getElementById("focus-bar");
   const focusStartEl = document.getElementById("focus-start");
   const focusResetEl = document.getElementById("focus-reset");
+  const agentBriefOpenEl = document.getElementById("agent-brief-open");
+  const agentBriefOverlayEl = document.getElementById("agent-brief-overlay");
+  const agentBriefTitleEl = document.getElementById("agent-brief-title");
+  const agentBriefWorktreeEl = document.getElementById("agent-brief-worktree");
+  const agentBriefBranchEl = document.getElementById("agent-brief-branch");
+  const agentBriefDevEl = document.getElementById("agent-brief-dev");
+  const agentBriefLiveEl = document.getElementById("agent-brief-live");
+  const agentBriefPromptEl = document.getElementById("agent-brief-prompt");
+  const agentBriefCopyEl = document.getElementById("agent-brief-copy");
+  const agentBriefCloseEl = document.getElementById("agent-brief-close");
+  const agentBriefCopyStatusEl = document.getElementById("agent-brief-copy-status");
   const tourOpenEl = document.getElementById("tour-open");
   const statusToggleEl = document.getElementById("status-toggle");
   const statusPanelEl = document.getElementById("status-panel");
@@ -2469,6 +2630,9 @@
     focusEndMs: null,
     focusInterval: null,
     commandHistory: [],
+    agentBriefing: null,
+    agentBriefingShownThisLogin: false,
+    agentBriefingAutoPending: false,
     login: {
       profile: "Trey",
       requested: false,
@@ -2664,13 +2828,76 @@
     state.login.requested = false;
     state.login.nameSent = false;
     state.login.connected = false;
+    state.agentBriefingShownThisLogin = false;
+    state.agentBriefingAutoPending = false;
     state.login.status = status || "Choose Trey or Joe to enter.";
     loginOverlayEl.hidden = false;
+    agentBriefOverlayEl.hidden = true;
     renderLogin();
   }
 
   function hideLogin() {
     loginOverlayEl.hidden = true;
+  }
+
+  function renderAgentBriefing(briefing) {
+    state.agentBriefing = briefing;
+    agentBriefTitleEl.textContent = `${briefing.actor || state.login.profile} agent instructions`;
+    agentBriefWorktreeEl.textContent = briefing.worktree_path || "-";
+    agentBriefBranchEl.textContent = briefing.branch || "-";
+    agentBriefDevEl.textContent = briefing.dev_url || `http://127.0.0.1:${briefing.dev_port || ""}`;
+    agentBriefLiveEl.textContent = briefing.remote_url || `http://127.0.0.1:${briefing.live_port || "8765"}`;
+    agentBriefPromptEl.textContent = briefing.agent_prompt || "No briefing loaded.";
+    agentBriefCopyStatusEl.textContent = "";
+  }
+
+  async function fetchAgentBriefing() {
+    const actor = encodeURIComponent(state.login.profile || "Trey");
+    const response = await fetch(`/api/agent-briefing?actor=${actor}`, { cache: "no-store" });
+    if (!response.ok) {
+      throw new Error("Could not load agent briefing.");
+    }
+    const payload = await response.json();
+    return payload.briefing || {};
+  }
+
+  async function showAgentBriefing(auto = false) {
+    if (auto && state.agentBriefingShownThisLogin) {
+      return;
+    }
+    if (auto) {
+      state.agentBriefingShownThisLogin = true;
+      state.agentBriefingAutoPending = true;
+    } else {
+      state.agentBriefingAutoPending = false;
+    }
+    try {
+      const briefing = await fetchAgentBriefing();
+      renderAgentBriefing(briefing);
+      agentBriefOverlayEl.hidden = false;
+    } catch (err) {
+      append(err.message || "Could not load agent briefing.", "error");
+      if (auto) {
+        state.agentBriefingAutoPending = false;
+        maybeStartOnboarding();
+      }
+    }
+  }
+
+  function closeAgentBriefing() {
+    agentBriefOverlayEl.hidden = true;
+    const shouldContinueOnboarding = state.agentBriefingAutoPending;
+    state.agentBriefingAutoPending = false;
+    if (shouldContinueOnboarding) {
+      maybeStartOnboarding();
+    }
+    cmdInput.focus();
+  }
+
+  async function copyAgentBriefingPrompt() {
+    const prompt = state.agentBriefing?.agent_prompt || agentBriefPromptEl.textContent || "";
+    const copied = await copyTextToClipboard(prompt);
+    agentBriefCopyStatusEl.textContent = copied ? "Prompt copied." : "Copy failed.";
   }
 
   function escapeHtml(text) {
@@ -2743,6 +2970,9 @@
     state.login.showOnboarding = loginOnboardingEl.checked;
     state.login.requested = true;
     state.login.nameSent = false;
+    state.agentBriefing = null;
+    state.agentBriefingShownThisLogin = false;
+    state.agentBriefingAutoPending = false;
     state.login.status = state.ws && state.ws.readyState === WebSocket.OPEN
       ? `Entering as ${state.login.profile}...`
       : `Connecting as ${state.login.profile}...`;
@@ -4191,7 +4421,7 @@
       if (message.includes("Connected to The Compound")) {
         state.login.connected = true;
         renderHudPresence();
-        maybeStartOnboarding();
+        showAgentBriefing(true);
       }
     };
 
@@ -4443,7 +4673,7 @@
     });
 
     document.addEventListener("click", (event) => {
-      if (!loginOverlayEl.hidden || !onboardingOverlayEl.hidden || !boardOverlayEl.hidden) return;
+      if (!loginOverlayEl.hidden || !agentBriefOverlayEl.hidden || !onboardingOverlayEl.hidden || !boardOverlayEl.hidden) return;
       if (event.target.closest("button,input,textarea,select,a")) return;
       cmdInput.focus();
     });
@@ -4462,6 +4692,10 @@
 
     focusStartEl.addEventListener("click", startFocus);
     focusResetEl.addEventListener("click", resetFocus);
+
+    agentBriefOpenEl.addEventListener("click", () => showAgentBriefing(false));
+    agentBriefCloseEl.addEventListener("click", closeAgentBriefing);
+    agentBriefCopyEl.addEventListener("click", copyAgentBriefingPrompt);
 
     tourOpenEl.addEventListener("click", () => {
       state.login.showOnboarding = true;

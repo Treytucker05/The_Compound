@@ -21,6 +21,7 @@ from websockets.asyncio.server import serve
 
 sys.path.insert(0, str(Path(__file__).parent))
 
+from agent_briefing import briefing_for_actor
 from board import COLUMNS, active_items_for_actor, add_item, blocked_items, load_board, save_board, utc_now
 from commands import handle
 from missions import load_missions
@@ -255,6 +256,10 @@ def radio_payload(actor: str = "", include_resolved: bool = False) -> dict:
         "needs_attention_threads": attention[-8:],
         "pulse": build_pulse_payload(),
     }
+
+
+def agent_briefing_payload(actor: str = "Trey") -> dict:
+    return {"briefing": briefing_for_actor(actor)}
 
 
 def radio_thread_summary(thread: dict) -> dict:
@@ -996,6 +1001,10 @@ async def process_request(connection, request):
 
     if path == "/api/pulse":
         return json_response(connection, 200, build_pulse_payload())
+
+    if path == "/api/agent-briefing":
+        actor = board_actor(query)
+        return json_response(connection, 200, agent_briefing_payload(actor))
 
     if path == "/api/board":
         return json_response(connection, 200, board_payload())
