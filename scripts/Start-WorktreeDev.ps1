@@ -22,10 +22,14 @@ Set-Location $WorktreePath
 $env:MUD_HOST = "0.0.0.0"
 $env:MUD_PORT = $Port
 $env:LOG_DIR = Join-Path $WorktreePath "data\logs"
+$PythonExe = "C:\Python313\python.exe"
+if (-not (Test-Path -LiteralPath $PythonExe)) {
+    $PythonExe = "python"
+}
 
 Write-Host "Starting The Compound dev HUD for $ProfileName"
 Write-Host "Worktree: $WorktreePath"
 Write-Host "URL: http://127.0.0.1:$Port"
 Write-Host "Live Compound remains on http://127.0.0.1:8765"
 
-python (Join-Path $WorktreePath "engine\server.py")
+& $PythonExe (Join-Path $WorktreePath "engine\server.py")

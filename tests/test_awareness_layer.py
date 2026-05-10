@@ -174,10 +174,12 @@ class AwarenessLayerTests(unittest.TestCase):
             original_root = server.ROOT_DIR
             original_board = server.BOARD_PATH
             original_radio = server.RADIO_PATH
+            original_sparks = server.SPARKS_PATH
             original_event = server.EVENT_LOG
             server.ROOT_DIR = root
             server.BOARD_PATH = board_path
             server.RADIO_PATH = radio_path
+            server.SPARKS_PATH = root / "data" / "sparks.json"
             server.EVENT_LOG = root / "data" / "logs" / "events.jsonl"
             try:
                 pulse = server.build_pulse_payload()
@@ -186,6 +188,7 @@ class AwarenessLayerTests(unittest.TestCase):
                 server.ROOT_DIR = original_root
                 server.BOARD_PATH = original_board
                 server.RADIO_PATH = original_radio
+                server.SPARKS_PATH = original_sparks
                 server.EVENT_LOG = original_event
 
             self.assertEqual(pulse["active_items"][0]["title"], "Ready shared card")

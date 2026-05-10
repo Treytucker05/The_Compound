@@ -21,6 +21,7 @@ from board import (
 )
 from missions import load_missions, render_missions
 from radio import ask_question, load_radio, render_inbox, reply_to_thread, resolve_thread
+from sparks import add_spark, load_sparks, promote_spark, render_sparks
 from vault_sync import sync as vault_sync
 from world import Player, World
 
@@ -36,8 +37,35 @@ def handle(player: Player, world: World, raw: str) -> str:
 
     board_path = getattr(world, "board_path", None)
     radio_path = getattr(world, "radio_path", None)
+    sparks_path = getattr(world, "sparks_path", None)
 
     # Operational board
+    if cmd == "spark":
+        if not args:
+            return "Use: spark <raw thought>"
+        sparks, item = add_spark(sparks_path, args, player.name)
+        _log_board_event(world, "spark_added", player, {"spark": item})
+        return f"Spark captured: {item['text']}\n\n{render_sparks(sparks)}"
+
+    if cmd == "sparks":
+        return render_sparks(load_sparks(sparks_path))
+
+    if cmd == "promote":
+        query = _parse_promote_args(args)
+        if not query:
+            return "Use: promote <spark id or text> to idea"
+        sparks, spark_item = promote_spark(sparks_path, query, player.name)
+        if not spark_item:
+            return f"No open spark matching: {query}"
+        board, board_item = add_item(board_path, spark_item["text"], player.name)
+        _log_board_event(world, "spark_promoted", player, {"spark": spark_item, "item": board_item})
+        _trigger_sync()
+        return (
+            f"Promoted to Ideas: {board_item['title']}\n\n"
+            f"{render_board(board, player.name, _online_players(world))}\n\n"
+            f"{render_sparks(sparks)}"
+        )
+
     if cmd == "board":
         return _render_operational_board(player, world)
 
@@ -383,6 +411,9 @@ def _help() -> str:
     return (
         "Commands:\n"
         "  board                — Show the Operational Board\n"
+        "  spark <thought>      — Capture a raw pre-board thought\n"
+        "  sparks               — Show open Spark Inbox thoughts\n"
+        "  promote <spark> to idea — Move a spark into board Ideas\n"
         "  add <item>           — Add an item to RAW\n"
         "  plan <item>          — Move an idea into PLAN\n"
         "  ready <item>         — Move a plan into READY\n"
@@ -456,6 +487,15 @@ def _parse_optional_note(args: str) -> tuple[str, str]:
         title, note = args.split(" - ", 1)
         return title.strip(), note.strip()
     return args.strip(), ""
+
+
+def _parse_promote_args(args: str) -> str:
+    text = args.strip()
+    lowered = text.lower()
+    for suffix in (" to idea", " to ideas"):
+        if lowered.endswith(suffix):
+            return text[: -len(suffix)].strip()
+    return text
 
 
 def _parse_target_message(args: str) -> tuple[str, str]:

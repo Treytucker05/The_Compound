@@ -17,6 +17,7 @@ config/.env
 data/.quickstart_seeded_v1.json
 data/board.json
 data/radio.json
+data/sparks.json
 data/notes.json
 data/logs/
 
