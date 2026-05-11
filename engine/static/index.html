@@ -874,7 +874,7 @@
     position: fixed;
     top: 18px;
     right: 18px;
-    z-index: 90;
+    z-index: 135;
     display: grid;
     justify-items: end;
     gap: 8px;
@@ -3933,6 +3933,44 @@
     chatStatusEl.textContent = "Thread resolved.";
   }
 
+  async function runChatThreadAction(button) {
+    const id = button.dataset.id;
+    const thread = button.closest(".chat-thread");
+    const input = thread ? thread.querySelector(".chat-reply-input") : null;
+    const text = input ? input.value.trim() : "";
+    if (!id) return;
+    if (button.dataset.chatAction === "reply") {
+      await replyChatThread(id, text);
+      if (input) input.value = "";
+    } else if (button.dataset.chatAction === "resolve") {
+      await resolveChatThreadFromChat(id, text);
+    }
+  }
+
+  async function handleChatComposeKeydown(event) {
+    if (event.key !== "Enter" || event.shiftKey || event.isComposing) return;
+    event.preventDefault();
+    try {
+      await sendChatMessage();
+    } catch (err) {
+      chatStatusEl.textContent = err.message || "Could not send chat.";
+    }
+  }
+
+  async function handleChatThreadKeydown(event) {
+    const input = event.target.closest(".chat-reply-input");
+    if (!input || event.key !== "Enter" || event.shiftKey || event.isComposing) return;
+    event.preventDefault();
+    const thread = input.closest(".chat-thread");
+    const button = thread ? thread.querySelector('[data-chat-action="reply"]') : null;
+    if (!button) return;
+    try {
+      await runChatThreadAction(button);
+    } catch (err) {
+      chatStatusEl.textContent = err.message || "Could not update chat.";
+    }
+  }
+
   function boardColumnLabel(columnId) {
     const match = BOARD_COLUMNS.find((column) => column.id === columnId);
     return match ? match.label : columnId;
@@ -5213,25 +5251,19 @@
       }
     });
 
+    chatMessageInputEl.addEventListener("keydown", handleChatComposeKeydown);
+
     chatThreadListEl.addEventListener("click", async (event) => {
       const button = event.target.closest("[data-chat-action]");
       if (!button) return;
-      const id = button.dataset.id;
-      const thread = button.closest(".chat-thread");
-      const input = thread ? thread.querySelector(".chat-reply-input") : null;
-      const text = input ? input.value.trim() : "";
-      if (!id) return;
       try {
-        if (button.dataset.chatAction === "reply") {
-          await replyChatThread(id, text);
-          if (input) input.value = "";
-        } else if (button.dataset.chatAction === "resolve") {
-          await resolveChatThreadFromChat(id, text);
-        }
+        await runChatThreadAction(button);
       } catch (err) {
         chatStatusEl.textContent = err.message || "Could not update chat.";
       }
     });
+
+    chatThreadListEl.addEventListener("keydown", handleChatThreadKeydown);
 
     document.addEventListener("click", (event) => {
       if (!state.chatOpen) return;

@@ -165,6 +165,19 @@ class VisualBoardTests(unittest.TestCase):
         self.assertIn("@keyframes chat-alert-flash", html)
         self.assertIn("@media (prefers-reduced-motion: reduce)", html)
 
+    def test_chat_stays_above_board_and_enter_sends_messages(self):
+        html = (ROOT / "engine" / "static" / "index.html").read_text(encoding="utf-8")
+
+        self.assertIn("#chat-alert {\n    position: fixed;\n    top: 18px;\n    right: 18px;\n    z-index: 135;", html)
+        self.assertIn("function handleChatComposeKeydown", html)
+        self.assertIn("function handleChatThreadKeydown", html)
+        self.assertIn('chatMessageInputEl.addEventListener("keydown", handleChatComposeKeydown)', html)
+        self.assertIn('chatThreadListEl.addEventListener("keydown", handleChatThreadKeydown)', html)
+        self.assertIn('event.key !== "Enter"', html)
+        self.assertIn("event.shiftKey", html)
+        self.assertIn("await sendChatMessage()", html)
+        self.assertIn("await runChatThreadAction(button)", html)
+
 
 if __name__ == "__main__":
     unittest.main()
