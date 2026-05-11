@@ -1858,6 +1858,72 @@
     display: none;
   }
 
+  #board-delete-dialog {
+    position: absolute;
+    inset: 0;
+    z-index: 5;
+    display: grid;
+    place-items: center;
+    padding: 18px;
+    background: rgba(2, 6, 5, 0.72);
+    backdrop-filter: blur(8px);
+  }
+
+  #board-delete-dialog[hidden] {
+    display: none;
+  }
+
+  .board-delete-card {
+    width: min(420px, 100%);
+    border: 1px solid rgba(255, 118, 109, 0.45);
+    border-radius: 8px;
+    background:
+      linear-gradient(180deg, rgba(18, 40, 36, 0.98), rgba(5, 13, 12, 0.98)),
+      var(--bg-panel);
+    box-shadow: 0 24px 56px rgba(0, 0, 0, 0.56);
+    padding: 18px;
+  }
+
+  .board-delete-kicker {
+    color: #ffbeb8;
+    font-size: 10px;
+    font-weight: 900;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  #board-delete-title {
+    margin-top: 6px;
+    color: var(--text);
+    font-size: 18px;
+    line-height: 1.25;
+  }
+
+  #board-delete-copy {
+    margin-top: 10px;
+    color: var(--text-soft);
+    font-size: 13px;
+    line-height: 1.45;
+  }
+
+  #board-delete-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 16px;
+  }
+
+  #board-delete-confirm {
+    border-color: rgba(255, 118, 109, 0.56);
+    background: rgba(255, 118, 109, 0.13);
+    color: #ffbeb8;
+  }
+
+  #board-delete-confirm:hover {
+    border-color: #ff8f86;
+    color: #ffe0dc;
+  }
+
   #board-guide-head {
     display: flex;
     justify-content: space-between;
@@ -2846,6 +2912,17 @@
         <span id="board-guide-copy-status" aria-live="polite"></span>
       </div>
     </aside>
+    <div id="board-delete-dialog" data-testid="board-delete-dialog" role="dialog" aria-modal="true" aria-labelledby="board-delete-title" hidden>
+      <div class="board-delete-card">
+        <div class="board-delete-kicker">Confirm delete</div>
+        <h3 id="board-delete-title">Delete this card?</h3>
+        <p id="board-delete-copy">This removes the card from the shared board.</p>
+        <div id="board-delete-actions">
+          <button class="board-mini-btn" id="board-delete-cancel" type="button">Cancel</button>
+          <button class="board-mini-btn danger" id="board-delete-confirm" data-testid="board-delete-confirm" type="button">Delete card</button>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -3019,6 +3096,10 @@
   const boardGuideCloseEl = document.getElementById("board-guide-close");
   const boardGuideCopyEl = document.getElementById("board-guide-copy");
   const boardGuideCopyStatusEl = document.getElementById("board-guide-copy-status");
+  const boardDeleteDialogEl = document.getElementById("board-delete-dialog");
+  const boardDeleteCopyEl = document.getElementById("board-delete-copy");
+  const boardDeleteCancelEl = document.getElementById("board-delete-cancel");
+  const boardDeleteConfirmEl = document.getElementById("board-delete-confirm");
 
   const loginOverlayEl = document.getElementById("login-overlay");
   const loginOnboardingEl = document.getElementById("login-onboarding");
@@ -3054,6 +3135,7 @@
     chatFullscreen: false,
     boardDraggingId: "",
     activeGuideItemId: "",
+    pendingDeleteItemId: "",
     guideTemplates: null,
     guidePromptTemplate: "",
     vaultFiles: [],
@@ -4349,7 +4431,45 @@
   function closeBoardPanel() {
     boardOverlayEl.hidden = true;
     closeBoardGuide();
+    closeBoardDeleteDialog();
     cmdInput.focus();
+  }
+
+  function findBoardItemById(id) {
+    if (!state.board || !state.board.columns) return null;
+    for (const items of Object.values(state.board.columns)) {
+      const found = (items || []).find((item) => item.id === id);
+      if (found) return found;
+    }
+    return null;
+  }
+
+  function openBoardDeleteDialog(id) {
+    const item = findBoardItemById(id);
+    state.pendingDeleteItemId = id;
+    const title = item && item.title ? item.title : "this card";
+    boardDeleteCopyEl.textContent = `Delete "${title}" from the shared board? This cannot be undone.`;
+    boardDeleteDialogEl.hidden = false;
+    boardDeleteConfirmEl.focus();
+  }
+
+  function closeBoardDeleteDialog() {
+    state.pendingDeleteItemId = "";
+    boardDeleteDialogEl.hidden = true;
+  }
+
+  async function confirmBoardDelete() {
+    const id = state.pendingDeleteItemId;
+    if (!id) return;
+    boardDeleteConfirmEl.disabled = true;
+    try {
+      await deleteBoardTask(id);
+      closeBoardDeleteDialog();
+    } catch (err) {
+      setBoardStatus(err.message || "Could not delete card.");
+    } finally {
+      boardDeleteConfirmEl.disabled = false;
+    }
   }
 
   function formatBoardDate(value) {
@@ -5448,6 +5568,20 @@
     boardCloseEl.addEventListener("click", closeBoardPanel);
     boardGuideCloseEl.addEventListener("click", closeBoardGuide);
     boardGuideCopyEl.addEventListener("click", copyActiveGuidePrompt);
+    boardDeleteCancelEl.addEventListener("click", closeBoardDeleteDialog);
+    boardDeleteConfirmEl.addEventListener("click", confirmBoardDelete);
+
+    boardDeleteDialogEl.addEventListener("click", (event) => {
+      if (event.target === boardDeleteDialogEl) {
+        closeBoardDeleteDialog();
+      }
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && !boardDeleteDialogEl.hidden) {
+        closeBoardDeleteDialog();
+      }
+    });
 
     boardPanelTabEls.forEach((button) => {
       button.addEventListener("click", () => setBoardPanel(button.dataset.boardPanel));
@@ -5615,10 +5749,7 @@
         } else if (action === "command") {
           runBoardCommand(actionButton.dataset.boardCommand || "");
         } else if (action === "delete") {
-          const confirmed = window.confirm("Delete this board card?");
-          if (confirmed) {
-            await deleteBoardTask(id);
-          }
+          openBoardDeleteDialog(id);
         }
       } catch (err) {
         setBoardStatus(err.message || "Could not update task.");

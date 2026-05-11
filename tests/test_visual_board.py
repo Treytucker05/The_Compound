@@ -74,6 +74,16 @@ class VisualBoardTests(unittest.TestCase):
         self.assertEqual(payload["board"]["columns"]["raw"], [])
         self.assertIn("deleted", payload["board"]["new"][-1]["text"].lower())
 
+    def test_board_delete_uses_compound_confirmation_dialog(self):
+        html = (ROOT / "engine" / "static" / "index.html").read_text(encoding="utf-8")
+
+        self.assertIn('data-testid="board-delete-dialog"', html)
+        self.assertIn('data-testid="board-delete-confirm"', html)
+        self.assertIn("function openBoardDeleteDialog", html)
+        self.assertIn("function confirmBoardDelete", html)
+        self.assertIn("openBoardDeleteDialog(id)", html)
+        self.assertNotIn('window.confirm("Delete this board card?")', html)
+
     def test_board_payload_includes_guide_questions_and_prompt_template(self):
         payload = server.board_payload(load_board(self.board_path))
 
