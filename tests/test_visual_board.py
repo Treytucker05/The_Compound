@@ -147,6 +147,10 @@ class VisualBoardTests(unittest.TestCase):
         self.assertIn('radioRequest("/api/radio/ask"', html)
         self.assertIn('radioRequest("/api/radio/reply"', html)
         self.assertIn('radioRequest("/api/radio/resolve"', html)
+        self.assertIn('data-chat-action="resolve" data-id="${escapeHtml(thread.id || "")}">Resolve</button>', html)
+        self.assertNotIn('data-chat-action="resolve" data-id="${escapeHtml(thread.id || "")}">Ack</button>', html)
+        self.assertIn('chatStatusEl.textContent = "Thread resolved."', html)
+        self.assertNotIn('chatStatusEl.textContent = "Thread acknowledged."', html)
 
     def test_chat_button_has_attention_badge_and_reduced_motion_alert(self):
         html = (ROOT / "engine" / "static" / "index.html").read_text(encoding="utf-8")

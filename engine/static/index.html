@@ -3840,7 +3840,7 @@
           <div class="chat-thread-actions">
             <input class="chat-reply-input" type="text" placeholder="Reply..." data-chat-reply-for="${escapeHtml(thread.id || "")}">
             <button class="btn" type="button" data-chat-action="reply" data-id="${escapeHtml(thread.id || "")}">Reply</button>
-            <button class="btn" type="button" data-chat-action="resolve" data-id="${escapeHtml(thread.id || "")}">Ack</button>
+            <button class="btn" type="button" data-chat-action="resolve" data-id="${escapeHtml(thread.id || "")}">Resolve</button>
           </div>
         </article>
       `;
@@ -3930,7 +3930,7 @@
 
   async function resolveChatThreadFromChat(id, note) {
     await radioRequest("/api/radio/resolve", { id, note });
-    chatStatusEl.textContent = "Thread acknowledged.";
+    chatStatusEl.textContent = "Thread resolved.";
   }
 
   function boardColumnLabel(columnId) {
