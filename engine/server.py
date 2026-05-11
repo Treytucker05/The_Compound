@@ -27,6 +27,7 @@ from commands import handle
 from missions import load_missions
 from quickstart import ensure_quickstart
 from radio import ask_question, load_radio, needs_attention_threads, reply_to_thread, resolve_thread, summarize_radio
+from sparks import add_spark, delete_spark, load_sparks, open_sparks, promote_spark
 from vault_sync import sync as vault_sync
 from world import ROOT_PATH, Player, World
 
@@ -36,6 +37,7 @@ PORT = int(os.environ.get("MUD_PORT", "8765"))
 NOTES_PATH = Path(os.environ.get("NOTES_PATH", str(ROOT_DIR / "data" / "notes.json")))
 BOARD_PATH = Path(os.environ.get("BOARD_PATH", str(ROOT_DIR / "data" / "board.json")))
 RADIO_PATH = Path(os.environ.get("RADIO_PATH", str(ROOT_DIR / "data" / "radio.json")))
+SPARKS_PATH = Path(os.environ.get("SPARKS_PATH", str(ROOT_DIR / "data" / "sparks.json")))
 LOG_DIR = Path(os.environ.get("LOG_DIR", str(ROOT_DIR / "data" / "logs")))
 VAULT_DIR = ROOT_DIR / "vault"
 
@@ -262,6 +264,15 @@ def agent_briefing_payload(actor: str = "Trey") -> dict:
     return {"briefing": briefing_for_actor(actor)}
 
 
+def spark_payload() -> dict:
+    sparks = load_sparks(SPARKS_PATH)
+    return {
+        "sparks": sparks,
+        "open_count": len(open_sparks(sparks)),
+        "pulse": build_pulse_payload(),
+    }
+
+
 def radio_thread_summary(thread: dict) -> dict:
     messages = thread.get("messages", [])
     first = messages[0] if messages else {}
@@ -317,6 +328,54 @@ def api_resolve_radio(query: dict) -> tuple[int, dict]:
         return 404, {"error": "Radio thread not found."}
     log_radio_event("thread_resolved_ui", actor, {"thread": thread, "note": note})
     return 200, radio_payload(actor)
+
+
+def api_add_spark(query: dict) -> tuple[int, dict]:
+    actor = board_actor(query)
+    text = query_value(query, "text")[:500]
+    if not text:
+        return 400, {"error": "Missing spark text."}
+
+    _sparks, item = add_spark(SPARKS_PATH, text, actor)
+    log_board_event("spark_added_ui", actor, {"spark": item})
+    return 200, spark_payload()
+
+
+def api_promote_spark(query: dict) -> tuple[int, dict]:
+    actor = board_actor(query)
+    spark_id = query_value(query, "id") or query_value(query, "query")
+    if not spark_id:
+        return 400, {"error": "Missing spark id."}
+
+    sparks, spark_item = promote_spark(SPARKS_PATH, spark_id, actor)
+    if not spark_item:
+        return 404, {"error": "Spark not found."}
+
+    board, board_item = add_item(BOARD_PATH, spark_item["text"], actor)
+    log_board_event("spark_promoted_ui", actor, {"spark": spark_item, "item": board_item})
+    sync_board_vault()
+    return 200, {
+        "sparks": sparks,
+        "open_count": len(open_sparks(sparks)),
+        "board_payload": board_payload(board),
+        "pulse": build_pulse_payload(),
+    }
+
+
+def api_delete_spark(query: dict) -> tuple[int, dict]:
+    spark_id = query_value(query, "id") or query_value(query, "query")
+    if not spark_id:
+        return 400, {"error": "Missing spark id."}
+
+    sparks, item = delete_spark(SPARKS_PATH, spark_id)
+    if not item:
+        return 404, {"error": "Spark not found."}
+
+    return 200, {
+        "sparks": sparks,
+        "open_count": len(open_sparks(sparks)),
+        "pulse": build_pulse_payload(),
+    }
 
 
 def find_board_item(board: dict, item_id: str) -> tuple[str, int, dict] | None:
@@ -585,6 +644,7 @@ def build_pulse_payload() -> dict:
     return {
         "counts": counts,
         "total_items": total_items,
+        "spark_count": len(open_sparks(load_sparks(SPARKS_PATH))),
         "done_streak_days": streak,
         "next_action": next_action_from_board(board),
         "recent_news": recent_news,
@@ -768,6 +828,12 @@ def summarize_presence_action(raw: str, player: Player, previous_room_id: str | 
         return "logged a completion"
     if cmd == "add":
         return "added a board card"
+    if cmd == "spark":
+        return "captured a spark"
+    if cmd == "sparks":
+        return "checked sparks"
+    if cmd == "promote":
+        return "promoted a spark"
     if cmd in ("board", "next"):
         return "checked the board"
     if cmd in ("ask", "reply", "resolve", "inbox", "radio"):
@@ -944,6 +1010,9 @@ async def mud_handler(websocket):
                     "go",
                     "working",
                     "add",
+                    "spark",
+                    "sparks",
+                    "promote",
                     "done",
                     "ask",
                     "inbox",
@@ -1012,6 +1081,27 @@ async def process_request(connection, request):
     if path == "/api/agent-briefing":
         actor = board_actor(query)
         return json_response(connection, 200, agent_briefing_payload(actor))
+
+    if path == "/api/sparks":
+        return json_response(connection, 200, spark_payload())
+
+    if path == "/api/sparks/add":
+        status, payload = api_add_spark(query)
+        if status == 200:
+            await broadcast_pulse()
+        return json_response(connection, status, payload)
+
+    if path == "/api/sparks/promote":
+        status, payload = api_promote_spark(query)
+        if status == 200:
+            await broadcast_pulse()
+        return json_response(connection, status, payload)
+
+    if path == "/api/sparks/delete":
+        status, payload = api_delete_spark(query)
+        if status == 200:
+            await broadcast_pulse()
+        return json_response(connection, status, payload)
 
     if path == "/api/board":
         return json_response(connection, 200, board_payload())
@@ -1087,6 +1177,7 @@ async def main():
     world = World(root=ROOT_PATH, notes_path=NOTES_PATH)
     world.board_path = BOARD_PATH
     world.radio_path = RADIO_PATH
+    world.sparks_path = SPARKS_PATH
     world.log_board_event = log_board_event
     world.log_radio_event = log_radio_event
     connected_players.clear()
@@ -1099,6 +1190,7 @@ async def main():
     print(f"[PORTAL] Notes: {NOTES_PATH}")
     print(f"[PORTAL] Board: {BOARD_PATH}")
     print(f"[PORTAL] Radio: {RADIO_PATH}")
+    print(f"[PORTAL] Sparks: {SPARKS_PATH}")
     if QUICKSTART_STATUS.get("messages"):
         for message in QUICKSTART_STATUS["messages"]:
             print(f"[PORTAL] {message}")

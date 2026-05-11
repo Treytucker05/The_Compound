@@ -101,6 +101,22 @@ class VisualBoardTests(unittest.TestCase):
         self.assertIn("return `working on ${title}`", html)
         self.assertIn("return `done ${title} -- completed from board`", html)
 
+    def test_board_overlay_contains_spark_inbox_tab(self):
+        html = (ROOT / "engine" / "static" / "index.html").read_text(encoding="utf-8")
+
+        self.assertIn('data-board-panel="sparks"', html)
+        self.assertIn('data-board-panel="work"', html)
+        self.assertIn('data-testid="spark-list"', html)
+        self.assertIn("function fetchSparks", html)
+        self.assertIn("function promoteSpark", html)
+        self.assertIn("Spark Inbox", html)
+
+    def test_board_panel_hidden_rule_prevents_tab_bleed(self):
+        html = (ROOT / "engine" / "static" / "index.html").read_text(encoding="utf-8")
+
+        self.assertIn("#spark-panel[hidden]", html)
+        self.assertIn("#board-work-panel[hidden]", html)
+
 
 if __name__ == "__main__":
     unittest.main()

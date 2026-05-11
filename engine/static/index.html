@@ -1441,6 +1441,49 @@
     font-size: 11px;
   }
 
+  #board-panel-tabs {
+    display: flex;
+    gap: 8px;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--line);
+    background: rgba(5, 13, 12, 0.74);
+  }
+
+  .board-panel-tab {
+    border: 1px solid rgba(83, 126, 116, 0.28);
+    border-radius: 7px;
+    background: rgba(7, 15, 14, 0.78);
+    color: var(--text-dim);
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: 800;
+    padding: 7px 10px;
+    text-transform: uppercase;
+  }
+
+  .board-panel-tab.active {
+    border-color: rgba(57, 217, 145, 0.7);
+    background: rgba(57, 217, 145, 0.12);
+    color: var(--good);
+  }
+
+  .board-panel {
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .board-panel[hidden],
+  #spark-panel[hidden],
+  #board-work-panel[hidden] {
+    display: none;
+  }
+
+  #board-work-panel,
+  #spark-panel {
+    display: grid;
+    grid-template-rows: auto 1fr;
+  }
+
   #board-add-form {
     display: grid;
     grid-template-columns: minmax(220px, 1fr) auto;
@@ -1463,6 +1506,61 @@
 
   #board-title-input::placeholder {
     color: rgba(143, 177, 170, 0.72);
+  }
+
+  #spark-add-form {
+    display: grid;
+    grid-template-columns: minmax(220px, 1fr) auto;
+    gap: 8px;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--line);
+    background: rgba(5, 13, 12, 0.7);
+  }
+
+  #spark-text-input {
+    min-width: 0;
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    background: rgba(5, 13, 12, 0.94);
+    color: var(--text);
+    padding: 9px 10px;
+    font-size: 12px;
+    outline: none;
+  }
+
+  #spark-list {
+    list-style: none;
+    display: grid;
+    align-content: start;
+    gap: 9px;
+    padding: 12px;
+    overflow: auto;
+  }
+
+  .spark-item {
+    border: 1px solid rgba(83, 126, 116, 0.3);
+    border-radius: 8px;
+    background: rgba(8, 18, 16, 0.74);
+    padding: 10px;
+  }
+
+  .spark-text {
+    color: var(--text);
+    font-size: 13px;
+    line-height: 1.45;
+  }
+
+  .spark-meta {
+    margin-top: 5px;
+    color: var(--text-dim);
+    font-size: 10px;
+  }
+
+  .spark-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 9px;
   }
 
   #board-columns {
@@ -2412,11 +2510,26 @@
       </div>
       <button class="btn" id="board-close" type="button">Close</button>
     </div>
-    <form id="board-add-form">
-      <input id="board-title-input" type="text" autocomplete="off" placeholder="Add a task to Ideas...">
-      <button class="btn" type="submit">Add Task</button>
-    </form>
-    <div id="board-columns"></div>
+    <div id="board-panel-tabs" role="tablist" aria-label="Board sections">
+      <button class="board-panel-tab active" type="button" data-board-panel="sparks" aria-pressed="true">Spark Inbox</button>
+      <button class="board-panel-tab" type="button" data-board-panel="work" aria-pressed="false">Work Board</button>
+    </div>
+    <section id="spark-panel" class="board-panel" data-testid="spark-panel">
+      <form id="spark-add-form">
+        <input id="spark-text-input" type="text" autocomplete="off" placeholder="Capture a raw spark before it becomes an idea...">
+        <button class="btn" type="submit">Add Spark</button>
+      </form>
+      <ul id="spark-list" data-testid="spark-list">
+        <li class="spark-item">Loading sparks...</li>
+      </ul>
+    </section>
+    <section id="board-work-panel" class="board-panel" hidden>
+      <form id="board-add-form">
+        <input id="board-title-input" type="text" autocomplete="off" placeholder="Add a task to Ideas...">
+        <button class="btn" type="submit">Add Task</button>
+      </form>
+      <div id="board-columns"></div>
+    </section>
     <aside id="board-guide-panel" data-testid="board-guide-panel" hidden>
       <div id="board-guide-head">
         <div>
@@ -2580,6 +2693,12 @@
   const boardOverlayEl = document.getElementById("board-overlay");
   const boardCloseEl = document.getElementById("board-close");
   const boardStatusEl = document.getElementById("board-status");
+  const boardPanelTabEls = Array.from(document.querySelectorAll("[data-board-panel]"));
+  const sparkPanelEl = document.getElementById("spark-panel");
+  const boardWorkPanelEl = document.getElementById("board-work-panel");
+  const sparkAddFormEl = document.getElementById("spark-add-form");
+  const sparkTextInputEl = document.getElementById("spark-text-input");
+  const sparkListEl = document.getElementById("spark-list");
   const boardAddFormEl = document.getElementById("board-add-form");
   const boardTitleInputEl = document.getElementById("board-title-input");
   const boardColumnsEl = document.getElementById("board-columns");
@@ -2615,6 +2734,8 @@
     dir: null,
     pulse: null,
     board: null,
+    sparks: null,
+    boardPanel: "sparks",
     radio: null,
     boardDraggingId: "",
     activeGuideItemId: "",
@@ -3511,8 +3632,30 @@
     return url.toString();
   }
 
+  function sparkUrl(path, params = {}) {
+    const url = new URL(path, window.location.origin);
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        url.searchParams.set(key, value);
+      }
+    });
+    url.searchParams.set("actor", boardActor());
+    return url.toString();
+  }
+
   function setBoardStatus(text) {
     boardStatusEl.textContent = text || "";
+  }
+
+  function setBoardPanel(panel) {
+    state.boardPanel = panel === "work" ? "work" : "sparks";
+    boardPanelTabEls.forEach((button) => {
+      const active = button.dataset.boardPanel === state.boardPanel;
+      button.classList.toggle("active", active);
+      button.setAttribute("aria-pressed", active ? "true" : "false");
+    });
+    sparkPanelEl.hidden = state.boardPanel !== "sparks";
+    boardWorkPanelEl.hidden = state.boardPanel !== "work";
   }
 
   function applyBoardPayload(payload) {
@@ -3527,6 +3670,20 @@
     renderBoardGuide();
   }
 
+  function applySparkPayload(payload) {
+    if (payload.sparks) {
+      state.sparks = payload.sparks;
+    }
+    if (payload.pulse) {
+      state.pulse = payload.pulse;
+      renderPulse();
+    }
+    if (payload.board_payload) {
+      applyBoardPayload(payload.board_payload);
+    }
+    renderSparks();
+  }
+
   async function boardRequest(path, params = {}) {
     const response = await fetch(boardUrl(path, params), { cache: "no-store" });
     const payload = await response.json();
@@ -3534,6 +3691,16 @@
       throw new Error(payload.error || "Board request failed.");
     }
     applyBoardPayload(payload);
+    return payload;
+  }
+
+  async function sparkRequest(path, params = {}) {
+    const response = await fetch(sparkUrl(path, params), { cache: "no-store" });
+    const payload = await response.json();
+    if (!response.ok) {
+      throw new Error(payload.error || "Spark request failed.");
+    }
+    applySparkPayload(payload);
     return payload;
   }
 
@@ -3552,8 +3719,23 @@
     }
   }
 
+  async function fetchSparks() {
+    try {
+      const response = await fetch(sparkUrl("/api/sparks"), { cache: "no-store" });
+      const payload = await response.json();
+      if (!response.ok) {
+        throw new Error(payload.error || "Spark inbox unavailable.");
+      }
+      applySparkPayload(payload);
+    } catch (err) {
+      sparkListEl.innerHTML = `<li class="spark-item">${escapeHtml(err.message || "Spark inbox unavailable.")}</li>`;
+    }
+  }
+
   function openBoardPanel() {
     boardOverlayEl.hidden = false;
+    setBoardPanel(state.boardPanel);
+    fetchSparks();
     fetchBoard();
   }
 
@@ -3681,6 +3863,42 @@
     `;
   }
 
+  function formatSparkDate(value) {
+    if (!value) return "";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "";
+    return date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  }
+
+  function renderSparkItem(item) {
+    const id = escapeAttr(item.id || "");
+    const created = formatSparkDate(item.created_at);
+    const meta = [
+      item.created_by || "unknown",
+      created
+    ].filter(Boolean).join(" | ");
+    return `
+      <li class="spark-item" data-id="${id}">
+        <div class="spark-text">${escapeHtml(item.text || "Untitled spark")}</div>
+        <div class="spark-meta">${escapeHtml(meta)}</div>
+        <div class="spark-actions">
+          <button class="board-mini-btn primary" type="button" data-spark-action="promote" data-id="${id}" title="Promote this spark into board Ideas">Promote to Idea</button>
+          <button class="board-mini-btn danger" type="button" data-spark-action="delete" data-id="${id}" title="Delete this spark">Delete</button>
+        </div>
+      </li>
+    `;
+  }
+
+  function renderSparks() {
+    const sparks = state.sparks || {};
+    const items = (sparks.items || []).filter((item) => (item.status || "open") === "open");
+    if (!items.length) {
+      sparkListEl.innerHTML = '<li class="spark-item">No open sparks. Capture rough thoughts here before they become board Ideas.</li>';
+      return;
+    }
+    sparkListEl.innerHTML = items.map(renderSparkItem).join("");
+  }
+
   function renderBoardTask(item, columnId) {
     const title = escapeHtml(item.title || "Untitled task");
     const priority = item.priority ? `<span class="board-pill">Priority</span>` : "";
@@ -3756,6 +3974,22 @@
 
   async function addBoardTask(title) {
     runBoardCommand(`add ${title}`);
+  }
+
+  async function addSpark(text) {
+    await sparkRequest("/api/sparks/add", { text });
+    setBoardStatus("Spark captured.");
+  }
+
+  async function promoteSpark(id) {
+    await sparkRequest("/api/sparks/promote", { id });
+    setBoardPanel("work");
+    setBoardStatus("Spark promoted to Ideas.");
+  }
+
+  async function deleteSpark(id) {
+    await sparkRequest("/api/sparks/delete", { id });
+    setBoardStatus("Spark deleted.");
   }
 
   async function updateBoardTask(id, title) {
@@ -4433,6 +4667,7 @@
           renderPulse();
           if (!boardOverlayEl.hidden) {
             fetchBoard();
+            fetchSparks();
           }
           if (document.getElementById("tab-radio").classList.contains("active")) {
             fetchRadioInbox();
@@ -4553,9 +4788,44 @@
     boardGuideCloseEl.addEventListener("click", closeBoardGuide);
     boardGuideCopyEl.addEventListener("click", copyActiveGuidePrompt);
 
+    boardPanelTabEls.forEach((button) => {
+      button.addEventListener("click", () => setBoardPanel(button.dataset.boardPanel));
+    });
+
     boardOverlayEl.addEventListener("click", (event) => {
       if (event.target === boardOverlayEl) {
         closeBoardPanel();
+      }
+    });
+
+    sparkAddFormEl.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const text = sparkTextInputEl.value.trim();
+      if (!text) return;
+      sparkTextInputEl.value = "";
+      try {
+        await addSpark(text);
+      } catch (err) {
+        setBoardStatus(err.message || "Could not add spark.");
+      }
+    });
+
+    sparkListEl.addEventListener("click", async (event) => {
+      const button = event.target.closest("[data-spark-action]");
+      if (!button) return;
+      const id = button.dataset.id;
+      if (!id) return;
+      try {
+        if (button.dataset.sparkAction === "promote") {
+          await promoteSpark(id);
+        } else if (button.dataset.sparkAction === "delete") {
+          const confirmed = window.confirm("Delete this spark?");
+          if (confirmed) {
+            await deleteSpark(id);
+          }
+        }
+      } catch (err) {
+        setBoardStatus(err.message || "Could not update spark.");
       }
     });
 
