@@ -117,6 +117,50 @@ class VisualBoardTests(unittest.TestCase):
         self.assertIn("#spark-panel[hidden]", html)
         self.assertIn("#board-work-panel[hidden]", html)
 
+    def test_persistent_chat_button_and_dropdown_shell_exist(self):
+        html = (ROOT / "engine" / "static" / "index.html").read_text(encoding="utf-8")
+
+        self.assertIn('id="chat-alert"', html)
+        self.assertIn('data-testid="chat-alert-button"', html)
+        self.assertIn('id="chat-alert-badge"', html)
+        self.assertIn('data-testid="chat-alert-badge"', html)
+        self.assertIn('id="chat-panel"', html)
+        self.assertIn('data-testid="chat-panel"', html)
+        self.assertIn('data-testid="chat-thread-list"', html)
+        self.assertIn('data-testid="chat-message-input"', html)
+        self.assertIn('data-testid="chat-send-button"', html)
+        self.assertIn("function toggleChatPanel", html)
+        self.assertIn("function closeChatPanel", html)
+
+    def test_chat_dropdown_reads_and_updates_radio_threads(self):
+        html = (ROOT / "engine" / "static" / "index.html").read_text(encoding="utf-8")
+
+        self.assertIn("function chatThreadsForActor", html)
+        self.assertIn("function renderChatThreads", html)
+        self.assertIn("function fetchChatThreads", html)
+        self.assertIn("function sendChatMessage", html)
+        self.assertIn("function replyChatThread", html)
+        self.assertIn("function resolveChatThreadFromChat", html)
+        self.assertIn('data-chat-action="reply"', html)
+        self.assertIn('data-chat-action="resolve"', html)
+        self.assertIn('class="chat-reply-input"', html)
+        self.assertIn('radioRequest("/api/radio/ask"', html)
+        self.assertIn('radioRequest("/api/radio/reply"', html)
+        self.assertIn('radioRequest("/api/radio/resolve"', html)
+
+    def test_chat_button_has_attention_badge_and_reduced_motion_alert(self):
+        html = (ROOT / "engine" / "static" / "index.html").read_text(encoding="utf-8")
+
+        self.assertIn("function chatAttentionThreads", html)
+        self.assertIn("function chatAttentionKey", html)
+        self.assertIn("function updateChatAlert", html)
+        self.assertIn("state.chatSeenAttentionKey", html)
+        self.assertIn('classList.toggle("is-alerting"', html)
+        self.assertIn("#chat-alert-button.is-alerting", html)
+        self.assertIn("@keyframes chat-alert-wiggle", html)
+        self.assertIn("@keyframes chat-alert-flash", html)
+        self.assertIn("@media (prefers-reduced-motion: reduce)", html)
+
 
 if __name__ == "__main__":
     unittest.main()
