@@ -178,6 +178,24 @@ class VisualBoardTests(unittest.TestCase):
         self.assertIn("await sendChatMessage()", html)
         self.assertIn("await runChatThreadAction(button)", html)
 
+    def test_urgent_chat_button_auto_opens_fullscreen_chat(self):
+        html = (ROOT / "engine" / "static" / "index.html").read_text(encoding="utf-8")
+
+        self.assertIn('data-testid="chat-urgent-button"', html)
+        self.assertIn('id="chat-urgent-button"', html)
+        self.assertIn("#chat-alert.is-urgent-fullscreen", html)
+        self.assertIn("const URGENT_PREFIX = \"[URGENT]\";", html)
+        self.assertIn("function threadIsUrgent", html)
+        self.assertIn("function chatUrgentAttentionKey", html)
+        self.assertIn("function setChatFullscreen", html)
+        self.assertIn("function openUrgentChatPanel", html)
+        self.assertIn("async function sendUrgentChatMessage", html)
+        self.assertIn("state.chatSeenUrgentKey", html)
+        self.assertIn("sendChatMessage(true)", html)
+        self.assertIn("chatUrgentButtonEl.addEventListener", html)
+        self.assertIn("openUrgentChatPanel(urgentKey)", html)
+        self.assertIn("chatAlertEl.classList.toggle(\"is-urgent-fullscreen\"", html)
+
 
 if __name__ == "__main__":
     unittest.main()

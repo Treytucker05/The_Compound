@@ -882,8 +882,24 @@
     pointer-events: none;
   }
 
+  #chat-alert.is-urgent-fullscreen {
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
+    align-content: start;
+    justify-items: stretch;
+    padding: 18px;
+    background: rgba(3, 7, 7, 0.78);
+    backdrop-filter: blur(10px);
+    pointer-events: auto;
+  }
+
   #chat-alert[hidden] {
     display: none;
+  }
+
+  #chat-alert.is-urgent-fullscreen #chat-alert-button {
+    justify-self: end;
   }
 
   #chat-alert-button {
@@ -980,6 +996,12 @@
     padding: 10px;
   }
 
+  #chat-alert.is-urgent-fullscreen #chat-panel {
+    height: calc(100vh - 76px);
+    max-height: none;
+    padding: 14px;
+  }
+
   .chat-panel-head {
     display: flex;
     align-items: center;
@@ -998,6 +1020,21 @@
     grid-template-columns: minmax(0, 1fr) auto;
     gap: 7px;
     margin-bottom: 10px;
+  }
+
+  #chat-alert.is-urgent-fullscreen #chat-compose-form {
+    grid-template-columns: minmax(0, 1fr) auto auto;
+  }
+
+  #chat-urgent-button {
+    border-color: rgba(255, 118, 109, 0.62);
+    color: #ffd6cf;
+  }
+
+  #chat-urgent-button:hover,
+  #chat-urgent-button:focus-visible {
+    border-color: rgba(255, 118, 109, 0.9);
+    background: rgba(255, 118, 109, 0.16);
   }
 
   #chat-message-input {
@@ -1029,6 +1066,11 @@
     box-shadow: inset 3px 0 0 rgba(255, 209, 102, 0.75);
   }
 
+  .chat-thread.is-urgent {
+    border-color: rgba(255, 118, 109, 0.74);
+    box-shadow: inset 3px 0 0 rgba(255, 118, 109, 0.9);
+  }
+
   .chat-thread-head {
     display: flex;
     align-items: baseline;
@@ -1037,6 +1079,19 @@
     color: var(--text-soft);
     font-size: 11px;
     font-weight: 800;
+  }
+
+  .chat-urgent-pill {
+    display: inline-flex;
+    align-items: center;
+    margin-left: 6px;
+    border: 1px solid rgba(255, 118, 109, 0.62);
+    border-radius: 999px;
+    color: #ffd6cf;
+    font-size: 9px;
+    font-weight: 900;
+    line-height: 1;
+    padding: 3px 6px;
   }
 
   .chat-message-list {
@@ -2739,6 +2794,7 @@
     </div>
     <form id="chat-compose-form">
       <input id="chat-message-input" data-testid="chat-message-input" type="text" autocomplete="off" placeholder="Message the other operator...">
+      <button class="btn" id="chat-urgent-button" data-testid="chat-urgent-button" type="button">Urgent</button>
       <button class="btn" id="chat-send-button" data-testid="chat-send-button" type="submit">Send</button>
     </form>
     <div id="chat-thread-list" data-testid="chat-thread-list">
@@ -2908,6 +2964,7 @@
   const chatStatusEl = document.getElementById("chat-status");
   const chatComposeFormEl = document.getElementById("chat-compose-form");
   const chatMessageInputEl = document.getElementById("chat-message-input");
+  const chatUrgentButtonEl = document.getElementById("chat-urgent-button");
   const chatThreadListEl = document.getElementById("chat-thread-list");
 
   const onlineListEl = document.getElementById("online-list");
@@ -2993,6 +3050,8 @@
     radio: null,
     chatOpen: false,
     chatSeenAttentionKey: "",
+    chatSeenUrgentKey: "",
+    chatFullscreen: false,
     boardDraggingId: "",
     activeGuideItemId: "",
     guideTemplates: null,
@@ -3034,6 +3093,7 @@
   const LAYOUT_FOCUS_KEY = "compound_layout_focus_v1";
   const VAULT_SPLIT_KEY = "compound_vault_split_v1";
   const HUD_STORAGE_KEYS = [ONBOARDING_KEY, PROFILE_KEY, SHOW_ONBOARDING_KEY, VAULT_LAST_PATH_KEY, LAYOUT_FOCUS_KEY, VAULT_SPLIT_KEY];
+  const URGENT_PREFIX = "[URGENT]";
   const BOARD_COLUMNS = [
     { id: "raw", label: "Ideas", empty: "Capture rough thoughts here." },
     { id: "refined", label: "Plan", empty: "Shape the why, steps, and done check here." },
@@ -3207,6 +3267,8 @@
     state.login.connected = false;
     state.chatOpen = false;
     state.chatSeenAttentionKey = "";
+    state.chatSeenUrgentKey = "";
+    setChatFullscreen(false);
     state.agentBriefingShownThisLogin = false;
     state.agentBriefingAutoPending = false;
     state.login.status = status || "Choose Trey or Joe to enter.";
@@ -3323,11 +3385,17 @@
     updateChatAlert();
   }
 
+  function setChatFullscreen(fullscreen) {
+    state.chatFullscreen = Boolean(fullscreen);
+    chatAlertEl.classList.toggle("is-urgent-fullscreen", state.chatFullscreen);
+  }
+
   function openChatPanel() {
     if (!state.login.connected) {
       return;
     }
     state.chatOpen = true;
+    setChatFullscreen(false);
     chatPanelEl.hidden = false;
     chatAlertButtonEl.setAttribute("aria-expanded", "true");
     chatStatusEl.textContent = "Loading radio...";
@@ -3336,8 +3404,25 @@
     chatMessageInputEl.focus();
   }
 
+  function openUrgentChatPanel(urgentKey = chatUrgentAttentionKey()) {
+    if (!state.login.connected) {
+      return;
+    }
+    state.chatOpen = true;
+    state.chatSeenUrgentKey = urgentKey || state.chatSeenUrgentKey;
+    state.chatSeenAttentionKey = chatAttentionKey();
+    setChatFullscreen(true);
+    chatPanelEl.hidden = false;
+    chatAlertButtonEl.setAttribute("aria-expanded", "true");
+    chatStatusEl.textContent = "Urgent message received.";
+    updateChatAlert();
+    fetchChatThreads();
+    chatMessageInputEl.focus();
+  }
+
   function closeChatPanel() {
     state.chatOpen = false;
+    setChatFullscreen(false);
     chatPanelEl.hidden = true;
     chatAlertButtonEl.setAttribute("aria-expanded", "false");
     updateChatAlert();
@@ -3708,6 +3793,27 @@
       .join("|");
   }
 
+  function isUrgentText(text) {
+    return String(text || "").trim().toUpperCase().startsWith(URGENT_PREFIX);
+  }
+
+  function cleanUrgentText(text) {
+    const value = String(text || "");
+    return isUrgentText(value) ? value.trim().slice(URGENT_PREFIX.length).trim() : value;
+  }
+
+  function threadIsUrgent(thread) {
+    const messages = thread.messages || [];
+    return isUrgentText(thread.latest_text || thread.text || "")
+      || messages.some((message) => isUrgentText(message.text));
+  }
+
+  function chatUrgentAttentionKey(threads = chatAttentionThreads().filter(threadIsUrgent)) {
+    return threads
+      .map((thread) => `${thread.id || ""}:${thread.updated_at || ""}:${thread.latest_from || ""}:${thread.latest_text || ""}`)
+      .join("|");
+  }
+
   function updateChatAlert() {
     if (!state.login.connected) {
       chatAlertBadgeEl.hidden = true;
@@ -3719,6 +3825,7 @@
     const attention = chatAttentionThreads();
     const count = attention.length;
     const key = chatAttentionKey(attention);
+    const urgentKey = chatUrgentAttentionKey(attention.filter(threadIsUrgent));
     chatAlertBadgeEl.hidden = count <= 0;
     chatAlertBadgeEl.textContent = String(count);
     chatAlertButtonEl.setAttribute(
@@ -3726,14 +3833,23 @@
       count ? `Chat, ${count} message${count === 1 ? "" : "s"} need attention` : "Chat"
     );
 
+    if (urgentKey && urgentKey !== state.chatSeenUrgentKey) {
+      openUrgentChatPanel(urgentKey);
+      return;
+    }
+
     if (!count) {
       state.chatSeenAttentionKey = "";
+      state.chatSeenUrgentKey = "";
       chatAlertButtonEl.classList.toggle("is-alerting", false);
       return;
     }
 
     if (state.chatOpen) {
       state.chatSeenAttentionKey = key;
+      if (urgentKey) {
+        state.chatSeenUrgentKey = urgentKey;
+      }
     }
 
     const shouldAlert = Boolean(key && key !== state.chatSeenAttentionKey && !state.chatOpen);
@@ -3819,23 +3935,25 @@
     chatThreadListEl.innerHTML = threads.map((thread) => {
       const updated = formatRadioDate(thread.updated_at);
       const attention = threadNeedsAttention(thread, boardActor()) ? " is-attention" : "";
+      const urgent = threadIsUrgent(thread) ? " is-urgent" : "";
+      const urgentPill = urgent ? `<span class="chat-urgent-pill">URGENT</span>` : "";
       const messages = (thread.messages || [])
         .slice(-4)
         .map((message) => `
           <div class="chat-message">
             <strong>${escapeHtml(message.from || "radio")}</strong>
-            <span>${escapeHtml(message.text || "")}</span>
+            <span>${escapeHtml(cleanUrgentText(message.text || ""))}</span>
           </div>
         `)
         .join("");
       return `
-        <article class="chat-thread${attention}" data-chat-thread-id="${escapeHtml(thread.id || "")}" data-testid="chat-thread">
+        <article class="chat-thread${attention}${urgent}" data-chat-thread-id="${escapeHtml(thread.id || "")}" data-testid="chat-thread">
           <div class="chat-thread-head">
-            <strong>#${escapeHtml(thread.id || "")} ${escapeHtml(thread.from || "?")} -> ${escapeHtml(thread.to || "?")}</strong>
+            <strong>#${escapeHtml(thread.id || "")} ${escapeHtml(thread.from || "?")} -> ${escapeHtml(thread.to || "?")}${urgentPill}</strong>
             <span class="mono-dim">${escapeHtml(updated)}</span>
           </div>
           <div class="chat-message-list" data-testid="chat-message-list">
-            ${messages || `<div class="mono-dim">${escapeHtml(thread.text || "No messages yet.")}</div>`}
+            ${messages || `<div class="mono-dim">${escapeHtml(cleanUrgentText(thread.text || "No messages yet."))}</div>`}
           </div>
           <div class="chat-thread-actions">
             <input class="chat-reply-input" type="text" placeholder="Reply..." data-chat-reply-for="${escapeHtml(thread.id || "")}">
@@ -3893,16 +4011,23 @@
     setRadioStatus(`Radio sent to ${target}.`);
   }
 
-  async function sendChatMessage() {
-    const text = chatMessageInputEl.value.trim();
+  async function sendChatMessage(urgent = false) {
+    let text = chatMessageInputEl.value.trim();
     const target = otherProfile();
     if (!text) {
       chatStatusEl.textContent = "Write a message first.";
       return;
     }
+    if (urgent && !isUrgentText(text)) {
+      text = `${URGENT_PREFIX} ${text}`;
+    }
     await radioRequest("/api/radio/ask", { to: target, text });
     chatMessageInputEl.value = "";
-    chatStatusEl.textContent = `Sent to ${target}.`;
+    chatStatusEl.textContent = urgent ? `Urgent sent to ${target}.` : `Sent to ${target}.`;
+  }
+
+  async function sendUrgentChatMessage() {
+    await sendChatMessage(true);
   }
 
   async function replyRadioThread(id, text) {
@@ -5252,6 +5377,14 @@
     });
 
     chatMessageInputEl.addEventListener("keydown", handleChatComposeKeydown);
+
+    chatUrgentButtonEl.addEventListener("click", async () => {
+      try {
+        await sendUrgentChatMessage();
+      } catch (err) {
+        chatStatusEl.textContent = err.message || "Could not send urgent chat.";
+      }
+    });
 
     chatThreadListEl.addEventListener("click", async (event) => {
       const button = event.target.closest("[data-chat-action]");
