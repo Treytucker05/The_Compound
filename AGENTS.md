@@ -127,6 +127,23 @@ If the login says `Joe is already online` or `Trey is already online`, do not
 switch identities. Use the existing open browser session, wait for the old
 session to disconnect, or ask Trey before restarting a server.
 
+## Shared Dev Testing
+
+Treat each dev server like a preview room.
+
+- If Trey built the change, both Trey and Joe should test together on Trey dev:
+  `http://100.87.143.16:8766/`
+- If Joe built the change, both Trey and Joe should test together on Joe dev:
+  `http://100.87.143.16:8767/`
+- Keep the live shared app on `http://100.87.143.16:8765/` available for real
+  use while testing dev changes.
+- Both operators may log into the same dev HUD at the same time, one as `Trey`
+  and one as `Joe`, to test presence, board updates, radio, commands, and vault
+  behavior.
+- Do not use live `8765` as the first place to test risky or unfinished code.
+- Before promoting a dev change to live, write down what was tested in the dev
+  room and whether both operators saw the expected behavior.
+
 ## Coding Rules
 
 - Work in the operator worktree, not the live folder.
@@ -170,6 +187,51 @@ For Trey, push to `trey/workspace`.
 Do not merge to `master` unless Trey explicitly approves the merge. When a merge
 is approved, update `D:\The_Compound`, run tests, restart the live server, and
 verify the live HUD in the browser.
+
+## Live Deploy Safety
+
+The live shared board is runtime state. Do not overwrite it while deploying
+code.
+
+Before merging or deploying to live, inspect the exact file list:
+
+```bat
+git diff --name-status origin/master..origin/trey/workspace
+git diff --name-status origin/master..origin/joe/workspace
+```
+
+For the branch being promoted, stop if the diff includes runtime data such as:
+
+- `data\board.json`
+- `data\sparks.json`
+- `data\notes.json`
+- `data\logs\*`
+- local process files
+- temporary browser/test artifacts
+
+Generated vault mirrors are usually runtime output too:
+
+- `vault\03_SHARED\OPERATIONAL_BOARD.md`
+- `vault\03_SHARED\WORKSPACE_MAP.md`
+
+Only commit or deploy those vault mirror files when the task explicitly changes
+the generated vault output and Trey approves including them.
+
+Safe live promotion sequence:
+
+1. Confirm the feature branch contains only intentional code/docs/tests.
+2. Confirm no `data\*.json` or `data\logs\*` files are in the merge diff.
+3. Confirm both operators tested the feature on the appropriate dev HUD.
+4. Merge or fast-forward `master`.
+5. In `D:\The_Compound`, pull the updated `master`.
+6. Restart `TheCompoundServer`.
+7. Open `http://100.87.143.16:8765/`.
+8. Confirm the live board still has the expected cards before testing the new
+   feature.
+
+If a live deploy appears to clear or change board state, stop immediately. Do
+not continue clicking or running commands. Inspect `data\board.json`, git diff,
+and backups before attempting recovery.
 
 ## Merge And Conflict Rules
 
