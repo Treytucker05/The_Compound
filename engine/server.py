@@ -1192,6 +1192,11 @@ async def process_request(connection, request):
     if path == "/api/health":
         return json_response(connection, 200, {"ok": True, "time": datetime.now(timezone.utc).isoformat()})
 
+    # Let the WebSocket handshake path fall through to mud_handler. Returning
+    # None here allows websockets to perform the upgrade; a 404 would break it.
+    if path == "/ws":
+        return None
+
     # Unknown path: respond 404 instead of falling through to the websocket
     # handshake (which spammed the log and misled clients about intent).
     response = connection.respond(404, json.dumps({"error": "not found", "path": path}))
