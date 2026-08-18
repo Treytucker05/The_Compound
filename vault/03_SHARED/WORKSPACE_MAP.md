@@ -1,6 +1,6 @@
 # Workspace Map
 
-> Auto-generated: 2026-08-18 20:07:17 UTC
+> Auto-generated: 2026-08-18 21:58:44 UTC
 
 ## Top-Level
 - `AGENTS.md`
