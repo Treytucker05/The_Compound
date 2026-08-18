@@ -1,12 +1,12 @@
 # Workspace Map
 
-> Auto-generated: 2026-05-11 06:27:30 UTC
+> Auto-generated: 2026-08-18 20:07:17 UTC
 
 ## Top-Level
 - `AGENTS.md`
 - **COMPOUND_APPROACH/** (8 files)
 - **config/** (2 files)
-- **data/** (13 files)
+- **data/** (15 files)
 - **dist/** (1 files)
 - **docs/** (8 files)
 - **engine/** (32 files)
