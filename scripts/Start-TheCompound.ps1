@@ -78,17 +78,23 @@ Write-Step "Starting server from $Root"
 Write-Step "Python: $python"
 
 $action = New-ScheduledTaskAction -Execute "cmd.exe" -Argument "/c `"$runner`""
-$trigger = New-ScheduledTaskTrigger -Once -At (Get-Date).Date.AddYears(10)
+# AtStartup so the server survives reboots; SYSTEM so it starts before any login.
+$trigger = New-ScheduledTaskTrigger -AtStartup
+$principal = New-ScheduledTaskPrincipal -UserId "SYSTEM" -LogonType ServiceAccount -RunLevel Highest
+# RestartCount/RestartInterval make a crashed server self-heal within ~1 minute.
 $settings = New-ScheduledTaskSettingsSet `
     -AllowStartIfOnBatteries `
     -DontStopIfGoingOnBatteries `
     -MultipleInstances IgnoreNew `
-    -ExecutionTimeLimit (New-TimeSpan -Days 365)
+    -ExecutionTimeLimit ([TimeSpan]::Zero) `
+    -RestartCount 999 `
+    -RestartInterval (New-TimeSpan -Minutes 1)
 
 Register-ScheduledTask `
     -TaskName $taskName `
     -Action $action `
     -Trigger $trigger `
+    -Principal $principal `
     -Settings $settings `
     -Description "Runs The Compound shared workspace server from D:\The_Compound." `
     -Force | Out-Null
