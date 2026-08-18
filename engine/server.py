@@ -925,6 +925,10 @@ async def mud_handler(websocket):
         return
 
     name = str(name_msg).strip()[:32] or "Wanderer"
+    # A trailing '!' marks a deliberate takeover request from the same operator.
+    force = name.endswith("!")
+    if force:
+        name = (name[:-1].strip())[:32] or "Wanderer"
 
     existing = runtime_world.players.get(name.lower())
     if existing is not None:
@@ -935,19 +939,23 @@ async def mud_handler(websocket):
             else None
         )
         stale = existing_socket is None or existing_state != State.OPEN
-        if not stale:
-            # A second live connection genuinely owns this name.
+        if not stale and not force:
+            # A second live connection genuinely owns this name (no takeover asked).
             await websocket.send(f"The name '{name}' is already in use. Disconnecting.")
             await websocket.close()
             return
-        # A reconnect or a ghost owns this name: evict it and admit the new socket.
-        runtime_world.remove_player(existing)
-        connected_players.pop(existing_socket, None)
+        # A stale/ghost, or a deliberate takeover, claims this name.
         if existing_socket is not None:
+            try:
+                await existing_socket.send(f"TAKEOVER:{name}")
+            except Exception as exc:
+                log_event("error", "system", {"context": "takeover_notify", "error": str(exc)})
             try:
                 await existing_socket.close()
             except Exception as exc:
                 log_event("error", "system", {"context": "claim_evict", "error": str(exc)})
+        runtime_world.remove_player(existing)
+        connected_players.pop(existing_socket, None)
 
     player = Player(name=name, ws=websocket)
     runtime_world.add_player(player)

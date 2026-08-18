@@ -2939,6 +2939,7 @@
       <span>Run onboarding after login</span>
     </label>
     <div id="login-status" data-testid="login-status"></div>
+    <button class="btn" id="login-takeover" data-testid="login-takeover" type="button" hidden>Take over this operator</button>
   </div>
 </div>
 
@@ -3104,6 +3105,7 @@
   const loginOverlayEl = document.getElementById("login-overlay");
   const loginOnboardingEl = document.getElementById("login-onboarding");
   const loginStatusEl = document.getElementById("login-status");
+  const loginTakeoverEl = document.getElementById("login-takeover");
   const profileButtons = Array.from(document.querySelectorAll(".profile-btn"));
 
   const onboardingOverlayEl = document.getElementById("onboarding-overlay");
@@ -3345,7 +3347,7 @@
     loginStatusEl.textContent = state.login.status || "";
   }
 
-  function showLogin(status = "") {
+  function showLogin(status = "", takeoverAvailable = false) {
     state.login.requested = false;
     state.login.nameSent = false;
     state.login.connected = false;
@@ -3356,6 +3358,7 @@
     state.agentBriefingShownThisLogin = false;
     state.agentBriefingAutoPending = false;
     state.login.status = status || "Choose Trey or Joe to enter.";
+    loginTakeoverEl.hidden = !takeoverAvailable;
     loginOverlayEl.hidden = false;
     agentBriefOverlayEl.hidden = true;
     renderChatShell();
@@ -3547,7 +3550,9 @@
     if (!state.ws || state.ws.readyState !== WebSocket.OPEN) {
       return;
     }
-    state.ws.send(state.login.profile);
+    const marker = forceTakeover ? state.login.profile + "!" : state.login.profile;
+    state.ws.send(marker);
+    forceTakeover = false;
     state.login.nameSent = true;
     state.login.status = `Entering as ${state.login.profile}...`;
     hideLogin();
@@ -5341,6 +5346,7 @@
 
   let reconnectAttempt = 0;
   let reconnectTimer = null;
+  let forceTakeover = false;
   const RECONNECT_DELAYS = [0, 1000, 2000, 5000, 10000, 15000, 30000];
 
   function scheduleReconnect() {
@@ -5384,13 +5390,20 @@
         sendLoginName();
         return;
       }
+      if (message.startsWith("TAKEOVER:")) {
+        state.disconnecting = true;
+        const who = message.slice(9).trim() || "Another session";
+        append(`${who} took over this connection.`, "error");
+        showLogin(`${who} took over. Choose an operator to continue.`);
+        return;
+      }
       if (message.includes("already in use")) {
         append(message, "error");
         state.disconnecting = true;
         try {
           state.ws.close();
         } catch (_err) {}
-        showLogin(`${state.login.profile} is already online. Choose the other profile or refresh after they leave.`);
+        showLogin(`${state.login.profile} is already online.`, true);
         return;
       }
       if (message.startsWith("PROMPT:")) {
@@ -5798,6 +5811,21 @@
 
     profileButtons.forEach((button) => {
       button.addEventListener("click", () => chooseProfile(button.dataset.profile));
+    });
+
+    loginTakeoverEl.addEventListener("click", () => {
+      if (!state.login.profile) return;
+      forceTakeover = true;
+      state.login.requested = true;
+      state.login.nameSent = false;
+      loginTakeoverEl.hidden = true;
+      state.login.status = `Taking over ${state.login.profile}...`;
+      renderLogin();
+      if (!state.ws || state.ws.readyState === WebSocket.CLOSED || state.ws.readyState === WebSocket.CLOSING) {
+        connect();
+        return;
+      }
+      sendLoginName();
     });
 
     loginOnboardingEl.addEventListener("change", () => {
