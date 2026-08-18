@@ -18,6 +18,7 @@ from urllib.parse import parse_qs, unquote, urlparse
 
 import websockets
 from websockets.asyncio.server import serve
+from websockets.protocol import State
 
 sys.path.insert(0, str(Path(__file__).parent))
 
@@ -925,10 +926,28 @@ async def mud_handler(websocket):
 
     name = str(name_msg).strip()[:32] or "Wanderer"
 
-    if name.lower() in runtime_world.players:
-        await websocket.send(f"The name '{name}' is already in use. Disconnecting.")
-        await websocket.close()
-        return
+    existing = runtime_world.players.get(name.lower())
+    if existing is not None:
+        existing_socket = getattr(existing, "ws", None)
+        existing_state = (
+            getattr(existing_socket, "state", None)
+            if existing_socket is not None
+            else None
+        )
+        stale = existing_socket is None or existing_state != State.OPEN
+        if not stale:
+            # A second live connection genuinely owns this name.
+            await websocket.send(f"The name '{name}' is already in use. Disconnecting.")
+            await websocket.close()
+            return
+        # A reconnect or a ghost owns this name: evict it and admit the new socket.
+        runtime_world.remove_player(existing)
+        connected_players.pop(existing_socket, None)
+        if existing_socket is not None:
+            try:
+                await existing_socket.close()
+            except Exception as exc:
+                log_event("error", "system", {"context": "claim_evict", "error": str(exc)})
 
     player = Player(name=name, ws=websocket)
     runtime_world.add_player(player)
@@ -1049,7 +1068,7 @@ async def mud_handler(websocket):
                         await occupant.ws.send(f"{player.name} fades into the mist.")
                     except Exception as exc:
                         log_event("error", "system", {"context": "logout_broadcast", "error": str(exc)})
-        runtime_world.remove_player(player)
+        runtime_world.remove_player(player) if runtime_world.players.get(player.name.lower()) is player else None
         connected_players.pop(websocket, None)
         log_event("logout", player.name, {"room": player.room.id if player.room else None})
         await broadcast_state()
