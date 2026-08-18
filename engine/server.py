@@ -1192,7 +1192,12 @@ async def process_request(connection, request):
     if path == "/api/health":
         return json_response(connection, 200, {"ok": True, "time": datetime.now(timezone.utc).isoformat()})
 
-    return None
+    # Unknown path: respond 404 instead of falling through to the websocket
+    # handshake (which spammed the log and misled clients about intent).
+    response = connection.respond(404, json.dumps({"error": "not found", "path": path}))
+    response.headers["Content-Type"] = "application/json; charset=utf-8"
+    response.headers["Cache-Control"] = "no-store"
+    return response
 
 
 async def main():
