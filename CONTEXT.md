@@ -27,6 +27,7 @@
 - **Collaborative Canvas**: A shared surface that permits Members to manipulate independent canvas objects concurrently.
 - **Controlled Session**: A shared program or test surface that permits exactly one Driver to alter the underlying application at a time.
 - **Driver**: The Member currently entitled to send host input during a Controlled Session.
+- **Primary Editor**: The first Member to focus a canvas text object during a concurrent edit. The Primary Editor receives deterministic ordering priority for a collision, without discarding the other Member's text.
 
 ## Core boundaries
 
