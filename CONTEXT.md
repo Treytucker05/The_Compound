@@ -32,9 +32,12 @@
 - **Radio Floor**: The exclusive right to transmit on Radio. At most one Member holds the Radio Floor at a time; releasing push-to-talk yields it.
 - **LLM Connection**: A configured, approved route from a Workstation to an AI model or model gateway. A connection never exposes its credential or silently shares one Member's project context with the other.
 - **Projected App Session**: A live terminal, browser, or desktop application on an Execution Host deliberately placed in a Projector Window. It follows Controlled Session rules: the current Driver's clicks and keystrokes route to the actual application, while the other Member observes, annotates, and can request a Driver Handoff.
-- **Active Projection**: The single high-bandwidth Projected App Session or live media playback allowed in version 1. Other programs remain on their originating desktop until a Member deliberately switches the Active Projection.
+- **Active Projection**: A live streamed Projected App Session or media source currently using shared projection capacity. Version 1 permits either one Shared Projection or one Reciprocal Peer View, but not both at once.
+- **Shared Projection**: One live program or media source presented to both Members in the same Projector Window. It uses Controlled Session rules for underlying application input.
+- **Peer Projection**: A one-way live view of a Member's local program sent only to the other Member. The source Member continues using the native local app while the recipient can observe and annotate.
+- **Reciprocal Peer View**: A paired mode with one Peer Projection in each direction: Trey sees Joe's selected program and Joe sees Trey's selected program. It has no stream loopback to the source owner.
 - **Co-Pilot Cursor**: A visible, Member-labelled pointer used to communicate presence and intent on a shared surface. It does not by itself grant control of the host application.
-- **Annotation**: A visual mark anchored to a shared screen, Preview, or Stage that communicates without changing the underlying application. An Annotation expires when its session ends unless a Member explicitly saves it.
+- **Annotation**: A visual mark anchored to a shared screen, Preview, Stage, or Peer Projection that communicates without changing the underlying application. In a Peer Projection, the source Connector renders the remote Member's Annotation over the source Member's local app. An Annotation expires when its session ends unless a Member explicitly saves it.
 - **Collaborative Canvas**: A shared surface that permits Members to manipulate independent canvas objects concurrently.
 - **Controlled Session**: A shared program or test surface that permits exactly one Driver to alter the underlying application at a time.
 - **Driver**: The Member currently entitled to send host input during a Controlled Session.

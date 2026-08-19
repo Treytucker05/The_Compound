@@ -1,6 +1,8 @@
 # Limit version 1 to one Active Projection
 
-**Status:** Accepted - 2026-08-19
+**Status:** Superseded - 2026-08-19
+
+**Superseded by:** [ADR-0009](0009-reciprocal-peer-view.md)
 
 The Compound must feel responsive while the Windows Desktop remains a lightweight coordination host. Simultaneously streaming several live applications or media sources creates avoidable bandwidth, encoding, and interaction lag.
 
