@@ -8,7 +8,8 @@
 - **Execution Host**: An approved Member computer that runs that Member's actual program, terminal, browser session, development server, or local model. Trey and Joe can each have their own Execution Hosts.
 - **Compound Connector**: An approved outbound connection from an Execution Host to the Compound Hub. It advertises only intentionally shared projects and sessions and never grants automatic whole-computer access.
 - **Drag to Project**: An explicit gesture from a Connector-provided live app card or thumbnail onto a Canvas Board or Projector Window. It creates a Projected App Session without moving the program or running it on the Compound Hub.
-- **Lobby**: The shared social room for presence, text chat, push-to-talk radio, and optional games. It is not a filesystem browser or an administrative console.
+- **Lobby**: The shared social room for presence, text chat, push-to-talk radio, and optional shared Game Tables. It is not a filesystem browser or an administrative console.
+- **Game Table**: A lightweight, native shared game in the Lobby that Members intentionally open and play together. It is not a Projector Window, a remote application stream, or an access path to a Member's files or computer.
 - **Workstation**: A Member's persistent work surface in The Compound. It presents that Member's registered projects, AI conversation, terminal, attachments, previews, and share controls through approved Execution Hosts.
 - **Stage**: A shared viewing surface where a Member intentionally presents a file, page, or live demo to the other Member.
 - **Computer Session**: A deliberately opened full-machine-control session targeting an approved Execution Host. It is separate from the ordinary Workstation and from the Lobby.
