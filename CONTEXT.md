@@ -23,7 +23,7 @@
 - **Radio Floor**: The exclusive right to transmit on Radio. At most one Member holds the Radio Floor at a time; releasing push-to-talk yields it.
 - **LLM Connection**: A configured, approved route from a Workstation to an AI model or model gateway. A connection never exposes its credential or silently shares one Member's project context with the other.
 - **Co-Pilot Cursor**: A visible, Member-labelled pointer used to communicate presence and intent on a shared surface. It does not by itself grant control of the host application.
-- **Annotation**: A visual mark anchored to a shared screen, Preview, or Stage that communicates without changing the underlying application.
+- **Annotation**: A visual mark anchored to a shared screen, Preview, or Stage that communicates without changing the underlying application. An Annotation expires when its session ends unless a Member explicitly saves it.
 - **Collaborative Canvas**: A shared surface that permits Members to manipulate independent canvas objects concurrently.
 - **Controlled Session**: A shared program or test surface that permits exactly one Driver to alter the underlying application at a time.
 - **Driver**: The Member currently entitled to send host input during a Controlled Session.

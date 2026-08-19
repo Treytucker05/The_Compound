@@ -10,6 +10,7 @@ Every shared surface declares one explicit Collaboration Mode.
 
 - **Collaborative Canvas** allows both Members to move, click, and type concurrently on independent canvas objects.
 - **Controlled Session** gives exactly one Driver actual host input while the other Member retains a Co-Pilot Cursor and can create Annotations.
+- Annotations expire when their session ends unless a Member explicitly invokes **Save Annotation**.
 - A non-Driver requests a Driver Handoff. The current Driver approves or releases that request before host input changes hands.
 - When both Members edit the same canvas text object, their input is merged so both Members' text remains present. The first Member to focus that object becomes the Primary Editor and receives deterministic ordering priority for a collision.
 
@@ -19,3 +20,4 @@ Every shared surface declares one explicit Collaboration Mode.
 - The active Driver, a pending handoff request, and a completed transfer remain visible to both Members.
 - Text editing needs a real-time merge mechanism with visible Member carets; it must preserve both inputs and apply the Primary Editor rule only when concurrent edits conflict.
 - Annotations never become underlying host input unless the active surface is explicitly switched to Collaborative Canvas.
+- Annotation content is not silently placed in session history or beside an underlying project file.
