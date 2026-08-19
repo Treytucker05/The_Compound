@@ -3,6 +3,7 @@
 ## People and places
 
 - **Member**: A trusted person who belongs in The Compound. The initial members are Trey and Joe.
+- **Compound Host**: The primary machine that owns persistent Workstations and Computer Sessions. For version 1, the Compound Host is the Windows Desktop.
 - **Lobby**: The shared social room for presence, text chat, push-to-talk radio, and optional games. It is not a filesystem browser or an administrative console.
 - **Workstation**: A Member's persistent work surface in The Compound. It presents that Member's registered projects, AI conversation, terminal, attachments, previews, and share controls.
 - **Stage**: A shared viewing surface where a Member intentionally presents a file, page, or live demo to the other Member.
