@@ -11,7 +11,7 @@ The Compound needs a place for freeform co-creation and for talking through proj
 - A Projector Window deliberately loads one Attachment or Preview. It chooses a compatible renderer: reading or editing for supported file types, playback for media such as video, and a clear non-editable fallback for unsupported types.
 - Editing a loaded file always creates a separate shared **Projector Draft**; it never writes into the source file automatically.
 - Projector Drafts are persistent shared artifacts in a **Projector Drafts Shelf** linked to their Canvas Board and source context.
-- The version 1 Projector Renderer set edits code, text, and Markdown; views PDFs and images; plays audio and video; and presents live local web demos.
+- The version 1 Projector Renderer set edits code, text, and Markdown; views PDFs and images; plays audio and video; presents live local web demos; and supports Projected App Sessions.
 - The Projector Window is extensible for additional useful renderers, but it does not silently expose a project folder or the Compound Host.
 
 ## Consequences

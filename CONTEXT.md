@@ -17,7 +17,7 @@
 - **Preview**: A rendered file or running local web application shown inside a Workstation or on the Stage.
 - **Attachment**: A file deliberately added to a conversation, project, or Stage. An attachment is not an implicit grant to browse its containing folder.
 - **Canvas Board**: The dedicated shared whiteboard for freeform collaboration. It operates in Collaborative Canvas mode and holds native canvas objects and Projector Windows.
-- **Projector Window**: A movable, resizable Canvas Board object that presents one deliberately loaded Attachment, Preview, or Shared AI Session with an appropriate renderer. Entering edit mode creates a Projector Draft. It does not grant access to the file's containing folder.
+- **Projector Window**: A movable, resizable Canvas Board object that presents one deliberately loaded Attachment, Preview, or Projected App Session with an appropriate renderer. Entering edit mode creates a Projector Draft. It does not grant access to the file's containing folder.
 - **Projector Renderer**: A type-specific Projector Window capability. The version 1 set edits code, text, and Markdown; views PDFs and images; plays audio and video; and presents live local web demos.
 - **Projector Draft**: A separate shared copy created when a Projector Window enters edit mode. It never automatically overwrites the original source file.
 - **Projector Drafts Shelf**: The persistent shared collection of Projector Drafts for a Canvas Board, retaining each draft's associated project or source context.
@@ -27,7 +27,7 @@
 - **Radio**: Live, push-to-talk voice communication in The Compound. Radio does not record or transcribe audio by default.
 - **Radio Floor**: The exclusive right to transmit on Radio. At most one Member holds the Radio Floor at a time; releasing push-to-talk yields it.
 - **LLM Connection**: A configured, approved route from a Workstation to an AI model or model gateway. A connection never exposes its credential or silently shares one Member's project context with the other.
-- **Shared AI Session**: An explicitly shared LLM conversation presented in a Projector Window. Both Members may submit attributed prompts and view responses. It is a synchronized conversation object, not a remote desktop stream or credential share.
+- **Projected App Session**: A live terminal, browser, or desktop application deliberately placed in a Projector Window. It follows Controlled Session rules: the current Driver's clicks and keystrokes reach the actual application, while the other Member observes, annotates, and can request a Driver Handoff.
 - **Co-Pilot Cursor**: A visible, Member-labelled pointer used to communicate presence and intent on a shared surface. It does not by itself grant control of the host application.
 - **Annotation**: A visual mark anchored to a shared screen, Preview, or Stage that communicates without changing the underlying application. An Annotation expires when its session ends unless a Member explicitly saves it.
 - **Collaborative Canvas**: A shared surface that permits Members to manipulate independent canvas objects concurrently.

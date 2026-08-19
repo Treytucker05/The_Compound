@@ -1,6 +1,8 @@
 # Make shared AI sessions Canvas objects, not screen casts
 
-**Status:** Accepted - 2026-08-19
+**Status:** Superseded - 2026-08-19
+
+**Superseded by:** [ADR-0005](0005-project-live-app-sessions.md)
 
 The Compound needs both Members to work together with an LLM without giving either person remote control of the other's computer or exposing a private conversation by accident.
 
