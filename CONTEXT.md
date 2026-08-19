@@ -3,15 +3,18 @@
 ## People and places
 
 - **Member**: A trusted person who belongs in The Compound. The initial members are Trey and Joe.
-- **Compound Host**: The primary machine that owns persistent Workstations and Computer Sessions. For version 1, the Compound Host is the Windows Desktop.
+- **Compound Host**: The primary machine that runs the Compound Hub. For version 1, it is the Windows Desktop; it coordinates the Compound but does not run Member workloads by default.
+- **Compound Hub**: The lightweight coordination service on the Compound Host that owns membership, session signaling, Canvas state, and persistent Compound metadata.
+- **Execution Host**: An approved Member computer that runs that Member's actual program, terminal, browser session, development server, or local model. Trey and Joe can each have their own Execution Hosts.
+- **Compound Connector**: An approved outbound connection from an Execution Host to the Compound Hub. It advertises only intentionally shared projects and sessions and never grants automatic whole-computer access.
 - **Lobby**: The shared social room for presence, text chat, push-to-talk radio, and optional games. It is not a filesystem browser or an administrative console.
-- **Workstation**: A Member's persistent work surface in The Compound. It presents that Member's registered projects, AI conversation, terminal, attachments, previews, and share controls.
+- **Workstation**: A Member's persistent work surface in The Compound. It presents that Member's registered projects, AI conversation, terminal, attachments, previews, and share controls through approved Execution Hosts.
 - **Stage**: A shared viewing surface where a Member intentionally presents a file, page, or live demo to the other Member.
-- **Computer Session**: A deliberately opened full-machine-control session. It is separate from the ordinary Workstation and from the Lobby.
+- **Computer Session**: A deliberately opened full-machine-control session targeting an approved Execution Host. It is separate from the ordinary Workstation and from the Lobby.
 
 ## Project and collaboration terms
 
-- **Registered Project Root**: A host folder deliberately enrolled as a project. The ordinary Workstation Files view contains only Registered Project Roots; it does not enumerate the entire host filesystem.
+- **Registered Project Root**: A folder on an Execution Host deliberately enrolled as a project. The ordinary Workstation Files view contains only Registered Project Roots; it does not enumerate the entire host filesystem.
 - **Shared Project**: A Registered Project Root that both Members may open from their Workstations.
 - **Personal Project**: A Registered Project Root normally visible to one Member that can be deliberately presented or shared.
 - **Preview**: A rendered file or running local web application shown inside a Workstation or on the Stage.
@@ -27,7 +30,7 @@
 - **Radio**: Live, push-to-talk voice communication in The Compound. Radio does not record or transcribe audio by default.
 - **Radio Floor**: The exclusive right to transmit on Radio. At most one Member holds the Radio Floor at a time; releasing push-to-talk yields it.
 - **LLM Connection**: A configured, approved route from a Workstation to an AI model or model gateway. A connection never exposes its credential or silently shares one Member's project context with the other.
-- **Projected App Session**: A live terminal, browser, or desktop application deliberately placed in a Projector Window. It follows Controlled Session rules: the current Driver's clicks and keystrokes reach the actual application, while the other Member observes, annotates, and can request a Driver Handoff.
+- **Projected App Session**: A live terminal, browser, or desktop application on an Execution Host deliberately placed in a Projector Window. It follows Controlled Session rules: the current Driver's clicks and keystrokes route to the actual application, while the other Member observes, annotates, and can request a Driver Handoff.
 - **Co-Pilot Cursor**: A visible, Member-labelled pointer used to communicate presence and intent on a shared surface. It does not by itself grant control of the host application.
 - **Annotation**: A visual mark anchored to a shared screen, Preview, or Stage that communicates without changing the underlying application. An Annotation expires when its session ends unless a Member explicitly saves it.
 - **Collaborative Canvas**: A shared surface that permits Members to manipulate independent canvas objects concurrently.
@@ -39,6 +42,7 @@
 ## Core boundaries
 
 - The Lobby is shared by design; Workstations and projects are explicit collaboration surfaces.
+- The Compound Hub coordinates Members and shared state; a project workload runs on its originating Execution Host by default.
 - Everyday file navigation begins with Registered Project Roots.
 - Full-machine control is deliberate and distinct from normal project work.
 - Sharing to the Stage changes what the other Member can view, not who owns a project or its files.

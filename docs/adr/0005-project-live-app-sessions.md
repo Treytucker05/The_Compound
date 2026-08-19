@@ -8,6 +8,7 @@ For the Compound to feel like a real shared workstation, a Member must be able t
 
 - Dragging an app card or window into the Canvas Board creates a **Projected App Session** in a Projector Window.
 - The Projector presents the live application and passes the active Driver's clicks and keystrokes to that actual application.
+- The actual application runs on its declared Execution Host; the Compound Hub coordinates the session without starting the Member workload on the Windows Desktop.
 - A Projected App Session is always a Controlled Session: it has one Driver at a time, a visible Co-Pilot Cursor, Annotations, and Driver Handoff requests.
 - A terminal, Codex-style CLI, browser-based LLM, or other tool keeps its native interface; the Projector does not replace it with separate prompt boxes.
 - A private LLM conversation remains private until its owner deliberately projects it; the detailed history-selection flow remains a separate decision.
@@ -16,5 +17,5 @@ For the Compound to feel like a real shared workstation, a Member must be able t
 
 - Two Members can see and take turns operating the exact same running program.
 - Canvas Boards retain true concurrent interaction for native canvas objects; this exception is necessary because terminal and application input are single live streams.
-- Version 1 must choose whether to prioritize Compound-owned terminal/browser sessions or capture and control of arbitrary already-running desktop windows.
+- Version 1 must choose the initial Connector transport for native terminal/browser sessions and for captured already-running desktop windows; neither transport moves the program execution onto the Windows Desktop.
 - A specialized Shared AI Session can be reconsidered later as an optional renderer, but it is not the primary workstation collaboration model.
