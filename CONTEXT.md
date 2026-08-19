@@ -16,6 +16,8 @@
 - **Personal Project**: A Registered Project Root normally visible to one Member that can be deliberately presented or shared.
 - **Preview**: A rendered file or running local web application shown inside a Workstation or on the Stage.
 - **Attachment**: A file deliberately added to a conversation, project, or Stage. An attachment is not an implicit grant to browse its containing folder.
+- **Canvas Board**: The dedicated shared whiteboard for freeform collaboration. It operates in Collaborative Canvas mode and holds native canvas objects and Projector Windows.
+- **Projector Window**: A movable, resizable Canvas Board object that presents one deliberately loaded Attachment or Preview with an appropriate reader, editor, or media player. It does not grant access to the file's containing folder.
 
 ## Live collaboration terms
 
