@@ -30,6 +30,7 @@
 
 - **Radio**: Live, push-to-talk voice communication in The Compound. Radio does not record or transcribe audio by default.
 - **Radio Floor**: The exclusive right to transmit on Radio. At most one Member holds the Radio Floor at a time; releasing push-to-talk yields it.
+- **Radio Busy State**: The visible state shown when a Member presses push-to-talk while the other Member holds the Radio Floor. The attempted transmission stays silent and is not queued or used to interrupt the speaker.
 - **LLM Connection**: A configured, approved route from a Workstation to an AI model or model gateway. A connection never exposes its credential or silently shares one Member's project context with the other.
 - **Projected App Session**: A live terminal, browser, or desktop application on an Execution Host deliberately placed in a Projector Window. It follows Controlled Session rules: the current Driver's clicks and keystrokes route to the actual application, while the other Member observes, annotates, and can request a Driver Handoff.
 - **Active Projection**: A live streamed Projected App Session or media source currently using shared projection capacity. Version 1 permits either one Shared Projection or one Reciprocal Peer View, but not both at once.
