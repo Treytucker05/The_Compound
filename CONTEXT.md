@@ -36,6 +36,7 @@
 - **Shared Projection**: One live program or media source presented to both Members in the same Projector Window. It uses Controlled Session rules for underlying application input.
 - **Peer Projection**: A one-way live view of a Member's local program sent only to the other Member. The source Member continues using the native local app while the recipient can observe and annotate.
 - **Reciprocal Peer View**: A paired mode with one Peer Projection in each direction: Trey sees Joe's selected program and Joe sees Trey's selected program. It has no stream loopback to the source owner.
+ **Peer Pane**: A dedicated, labelled pane docked beside a Member's Workstation while Reciprocal Peer View is active. It shows the other Member's Peer Projection and its annotations without replacing the source Member's native local app.
 - **Co-Pilot Cursor**: A visible, Member-labelled pointer used to communicate presence and intent on a shared surface. It does not by itself grant control of the host application.
 - **Annotation**: A visual mark anchored to a shared screen, Preview, Stage, or Peer Projection that communicates without changing the underlying application. In a Peer Projection, the source Connector renders the remote Member's Annotation over the source Member's local app. An Annotation expires when its session ends unless a Member explicitly saves it.
 - **Collaborative Canvas**: A shared surface that permits Members to manipulate independent canvas objects concurrently.
