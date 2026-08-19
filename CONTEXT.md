@@ -1,0 +1,30 @@
+# The Compound Ubiquitous Language
+
+## People and places
+
+- **Member**: A trusted person who belongs in The Compound. The initial members are Trey and Joe.
+- **Lobby**: The shared social room for presence, text chat, push-to-talk radio, and optional games. It is not a filesystem browser or an administrative console.
+- **Workstation**: A Member's persistent work surface in The Compound. It presents that Member's registered projects, AI conversation, terminal, attachments, previews, and share controls.
+- **Stage**: A shared viewing surface where a Member intentionally presents a file, page, or live demo to the other Member.
+- **Computer Session**: A deliberately opened full-machine-control session. It is separate from the ordinary Workstation and from the Lobby.
+
+## Project and collaboration terms
+
+- **Registered Project Root**: A host folder deliberately enrolled as a project. The ordinary Workstation Files view contains only Registered Project Roots; it does not enumerate the entire host filesystem.
+- **Shared Project**: A Registered Project Root that both Members may open from their Workstations.
+- **Personal Project**: A Registered Project Root normally visible to one Member that can be deliberately presented or shared.
+- **Preview**: A rendered file or running local web application shown inside a Workstation or on the Stage.
+- **Attachment**: A file deliberately added to a conversation, project, or Stage. An attachment is not an implicit grant to browse its containing folder.
+
+## Live collaboration terms
+
+- **Radio**: Live, push-to-talk voice communication in The Compound. Radio does not record or transcribe audio by default.
+- **Radio Floor**: The exclusive right to transmit on Radio. At most one Member holds the Radio Floor at a time; releasing push-to-talk yields it.
+- **LLM Connection**: A configured, approved route from a Workstation to an AI model or model gateway. A connection never exposes its credential or silently shares one Member's project context with the other.
+
+## Core boundaries
+
+- The Lobby is shared by design; Workstations and projects are explicit collaboration surfaces.
+- Everyday file navigation begins with Registered Project Roots.
+- Full-machine control is deliberate and distinct from normal project work.
+- Sharing to the Stage changes what the other Member can view, not who owns a project or its files.
