@@ -1,6 +1,8 @@
 # Give the first editor a visible lock on a shared source file
 
-**Status:** Accepted - 2026-08-20
+**Status:** Superseded - 2026-08-20
+
+**Superseded by:** [ADR-0028](0028-live-shared-source-collaboration.md)
 
 Real source files require a stronger protection against overwritten work than a shared Canvas note. Trey wants first-editor priority while preserving the other person's ability to follow along and communicate about the file.
 
