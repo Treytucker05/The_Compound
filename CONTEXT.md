@@ -39,8 +39,10 @@
 
 - **Registered Project Root**: A folder deliberately enrolled as a project on its Project Home Host. The ordinary Workstation Files view contains only Registered Project Roots; it does not enumerate the entire host filesystem.
 - **Project Home Host**: The one named Execution Host for a project. It holds that project's Registered Project Root, receives its source-file saves, and runs that project's native apps, terminals, and local models.
-- **Shared Project**: A Registered Project Root that both Members may open from their Workstations while retaining one Project Home Host.
-- **Personal Project**: A Registered Project Root normally visible to one Member that can be deliberately presented or shared.
+- **Project Owner**: The Member whose Execution Host is a project's Project Home Host. The Project Owner may invite the other Member to share that project.
+- **Project Share Invitation**: An explicit request from a Project Owner to the other Member to share one named project. It states the Project Home Host and must be accepted before the project becomes shared.
+- **Shared Project**: A Registered Project Root that both Members may open from their Workstations after the recipient accepts a Project Share Invitation. It retains one Project Home Host.
+- **Personal Project**: A Registered Project Root visible only to its Project Owner by default. It becomes a Shared Project only through an accepted Project Share Invitation.
 - **Preview**: A rendered file or running local web application shown inside a Workstation or on the Stage.
 - **Attachment**: A file deliberately added to a conversation, project, or Stage. An attachment is not an implicit grant to browse its containing folder.
 - **Canvas Board**: The dedicated shared whiteboard for freeform collaboration. It operates in Collaborative Canvas mode and holds native canvas objects and Projector Windows.
