@@ -22,6 +22,7 @@
 - **Workstation**: A Member's persistent work surface in The Compound. It presents that Member's registered projects, AI conversation, terminal, attachments, previews, and share controls through approved Execution Hosts.
 - **Project Desk**: The default Workstation layout: a Registered Project Root and files panel on the left, the selected real terminal, browser, or LLM tool surface in the center, and Preview and sharing controls alongside it. It does not create a separate prompt-only AI interface.
 - **Project Desk Restore**: Per-Member memory of the last selected project and desk arrangement. It restores layout and context on return but never starts a program, model, terminal, or Connector connection by itself.
+- **Project Desk Editor**: The Workstation's editable text and code surface. On an explicit save, it writes the Member's file directly to that Member's Registered Project Root through the appropriate Execution Host; it cannot write outside that root.
 - **Stage**: A shared viewing surface where a Member intentionally presents a file, page, or live demo to the other Member.
 - **Computer Session**: A deliberately opened full-machine-control session targeting an approved Execution Host. It is separate from the ordinary Workstation and from the Lobby.
 
