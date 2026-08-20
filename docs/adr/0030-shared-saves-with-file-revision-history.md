@@ -9,7 +9,7 @@ A live shared source buffer needs a clear save action, and Trey wants the abilit
 - Either Member may invoke an Explicit Save for the current merged live source buffer.
 - The shared file visibly records the most recent saver and save time.
 - Every Shared Save creates a retained Revision Snapshot of that individual source file.
-- Restoring a Revision Snapshot loads it into the live shared buffer; a later Explicit Save is still required before the real source file changes.
+- Opening a Revision Snapshot uses the compare-and-manual-copy process defined by [ADR-0031](0031-revision-compare-manual-copy.md); it never loads directly into the live shared buffer or source file.
 - Revision Snapshots have no automatic expiration or deletion policy in version 1; Trey and Joe will decide retention and removal later.
 - Revision history is file-level only. It does not imply an automatic full-project backup or capture unregistered files.
 

@@ -27,7 +27,8 @@
 - **Live Source Collaboration**: A Google-Docs-style shared source-file surface where both Members edit one merged buffer in real time and see each other's labelled caret and selection. It has no writer lock; source persistence follows the current Explicit Save policy.
 - **Shared Save State**: The common saved-or-dirty state of a live shared source-file buffer. Real-time edits update the merged buffer immediately but do not alter the underlying source file until an Explicit Save occurs.
 - **Shared Save**: An Explicit Save of a live shared source-file buffer that either Member may invoke. It records which Member saved and when.
-- **Revision Snapshot**: A retained file-level version created for every Shared Save. It can be restored into the live shared buffer for review and a later Explicit Save, without silently overwriting the source file.
+- **Revision Snapshot**: A retained file-level version created for every Shared Save. It is selected for Revision Compare and never directly changes the live shared buffer or source file.
+- **Revision Compare**: A side-by-side, line-level comparison of a Revision Snapshot and the current live shared file. It never changes the buffer or source file; Members manually copy the desired changes before an Explicit Save.
 - **Stage**: A shared viewing surface where a Member intentionally presents a file, page, or live demo to the other Member.
 - **Computer Session**: A deliberately opened full-machine-control session targeting an approved Execution Host. It is separate from the ordinary Workstation and from the Lobby.
 
