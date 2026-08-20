@@ -5,6 +5,7 @@
 - **Member**: A trusted person who belongs in The Compound. The initial members are Trey and Joe.
 - **Compound Host**: The primary machine that runs the Compound Hub. For version 1, it is the Windows Desktop; it coordinates the Compound but does not run Member workloads by default.
 - **Compound Hub**: The lightweight coordination service on the Compound Host that owns membership, session signaling, Canvas state, and persistent Compound metadata.
+- **Private-Network Admission**: The Compound’s network entry boundary. A device already approved on the private network can reach the Compound without a separate Compound invite; an ordinary local-network or public device cannot. It is not a Member identity or a grant of project or computer control.
 - **Execution Host**: An approved Member computer that runs that Member's actual program, terminal, browser session, development server, or local model. Trey and Joe can each have their own Execution Hosts.
 - **Compound Connector**: An approved outbound connection from an Execution Host to the Compound Hub. It advertises only intentionally shared projects and sessions and never grants automatic whole-computer access.
 - **Drag to Project**: An explicit gesture from a Connector-provided live app card or thumbnail onto a Canvas Board or Projector Window. It creates a Projected App Session without moving the program or running it on the Compound Hub.
