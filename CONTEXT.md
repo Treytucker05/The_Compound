@@ -22,7 +22,7 @@
 - **Workstation**: A Member's persistent work surface in The Compound. It presents that Member's registered projects, AI conversation, terminal, attachments, previews, and share controls through approved Execution Hosts.
 - **Project Desk**: The default Workstation layout: a Registered Project Root and files panel on the left, the selected real terminal, browser, or LLM tool surface in the center, and Preview and sharing controls alongside it. It does not create a separate prompt-only AI interface.
 - **Project Desk Restore**: Per-Member memory of the last selected project and desk arrangement. It restores layout and context on return but never starts a program, model, terminal, or Connector connection by itself.
-- **Project Desk Editor**: The Workstation's editable text and code surface. On an explicit save, it writes the Member's file directly to that Member's Registered Project Root through the appropriate Execution Host; it cannot write outside that root.
+- **Project Desk Editor**: The Workstation's editable text and code surface. On an explicit save, it writes the selected file only to the project's Registered Project Root on its Project Home Host through the appropriate Connector; it cannot write outside that root.
 - **Explicit Save**: A deliberate save action, including the normal keyboard shortcut, that writes a Project Desk Editor buffer to its source file. Unsaved content has a visible dirty state and recoverable local buffer; it never auto-writes source files.
 - **Live Source Collaboration**: A Google-Docs-style shared source-file surface where both Members edit one merged buffer in real time and see each other's labelled caret and selection. It has no writer lock; source persistence follows the current Explicit Save policy.
 - **Shared Save State**: The common saved-or-dirty state of a live shared source-file buffer. Real-time edits update the merged buffer immediately but do not alter the underlying source file until an Explicit Save occurs.
@@ -37,8 +37,9 @@
 
 ## Project and collaboration terms
 
-- **Registered Project Root**: A folder on an Execution Host deliberately enrolled as a project. The ordinary Workstation Files view contains only Registered Project Roots; it does not enumerate the entire host filesystem.
-- **Shared Project**: A Registered Project Root that both Members may open from their Workstations.
+- **Registered Project Root**: A folder deliberately enrolled as a project on its Project Home Host. The ordinary Workstation Files view contains only Registered Project Roots; it does not enumerate the entire host filesystem.
+- **Project Home Host**: The one named Execution Host for a project. It holds that project's Registered Project Root, receives its source-file saves, and runs that project's native apps, terminals, and local models.
+- **Shared Project**: A Registered Project Root that both Members may open from their Workstations while retaining one Project Home Host.
 - **Personal Project**: A Registered Project Root normally visible to one Member that can be deliberately presented or shared.
 - **Preview**: A rendered file or running local web application shown inside a Workstation or on the Stage.
 - **Attachment**: A file deliberately added to a conversation, project, or Stage. An attachment is not an implicit grant to browse its containing folder.
