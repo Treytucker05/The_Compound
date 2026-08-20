@@ -10,7 +10,9 @@
 - **Drag to Project**: An explicit gesture from a Connector-provided live app card or thumbnail onto a Canvas Board or Projector Window. It creates a Projected App Session without moving the program or running it on the Compound Hub.
 - **Lobby**: The shared social room for presence, text chat, push-to-talk radio, and optional shared Game Tables. It is not a filesystem browser or an administrative console.
 - **Game Table**: A lightweight, native shared game in the Lobby that Members intentionally open and play together. It is not a Projector Window, a remote application stream, or an access path to a Member's files or computer.
-- **Basketball Shootout**: The first selected Lobby Game Table. Its exact two-player scoring and control mechanics are decided separately from its role as the initial game target.
+- **Basketball Shootout**: The first selected Lobby Game Table. Version 1 supports HORSE, Timed Shootout, and Cooperative Target modes.
+- **Basketball Game Mode**: A selectable rule set for Basketball Shootout. Version 1 includes HORSE, Timed Shootout, and Cooperative Target modes.
+- **HORSE Mode**: The default Basketball Shootout mode. One Member selects a shot position on the shared court and takes a shot; after a made shot, the other Member must try the matching marked position under standard HORSE rules.
 - **Workstation**: A Member's persistent work surface in The Compound. It presents that Member's registered projects, AI conversation, terminal, attachments, previews, and share controls through approved Execution Hosts.
 - **Stage**: A shared viewing surface where a Member intentionally presents a file, page, or live demo to the other Member.
 - **Computer Session**: A deliberately opened full-machine-control session targeting an approved Execution Host. It is separate from the ordinary Workstation and from the Lobby.
