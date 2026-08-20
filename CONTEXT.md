@@ -31,6 +31,7 @@
 - **Revision Compare**: A side-by-side, line-level comparison of a Revision Snapshot and the current live shared file. It never changes the buffer or source file; Members manually copy the desired changes before an Explicit Save.
 - **Diff Summary**: A human-readable count of lines and sections added, removed, and changed between a Revision Snapshot and the current file.
 - **Revision Fingerprint**: A SHA-256 fingerprint of the exact saved file bytes in a Revision Snapshot, used to identify and verify that version's contents.
+- **Revision History Drawer**: A shared Project Desk panel beside the Files view that lists Revision Snapshots for the currently selected shared source file and opens Revision Compare.
 - **Stage**: A shared viewing surface where a Member intentionally presents a file, page, or live demo to the other Member.
 - **Computer Session**: A deliberately opened full-machine-control session targeting an approved Execution Host. It is separate from the ordinary Workstation and from the Lobby.
 
