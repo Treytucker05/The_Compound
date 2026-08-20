@@ -48,7 +48,8 @@
 - **Shared Project**: A Registered Project Root that both Members may open, browse, and edit through active Collaborator Access after the recipient accepts a Project Share Invitation. It retains one Project Home Host.
 - **Personal Project**: A Registered Project Root visible only to its Project Owner by default. It becomes a Shared Project only through an accepted Project Share Invitation.
 - **Preview**: A rendered file or running local web application shown inside a Workstation or on the Stage.
-- **Attachment**: A deliberately stored copy of a file added to a Canvas Board or project. It remains available to permitted Members even when its original Execution Host is offline, and it never grants access to the file's containing folder.
+- **Attachment**: A deliberately stored copy of a file added to a Canvas Board or project. It remains available to permitted Members even when its original Execution Host is offline, and it never grants access to the file's containing folder. It does not expire automatically.
+- **Attachment Removal**: A manual action that ends an Attachment's shared availability. The uploader may remove their own Attachment, and a Project Owner may remove any Attachment scoped to their project; it never moves or changes the original file.
 - **Canvas Board**: The dedicated shared whiteboard for freeform collaboration. It operates in Collaborative Canvas mode and holds native canvas objects and Projector Windows.
 - **Projector Window**: A movable, resizable Canvas Board object that presents one deliberately loaded Attachment, Preview, or Projected App Session with an appropriate renderer. Entering edit mode creates a Projector Draft. It does not grant access to the file's containing folder.
 - **Projector Renderer**: A type-specific Projector Window capability. The version 1 set edits code, text, and Markdown; views PDFs and images; plays audio and video; and presents live local web demos.
