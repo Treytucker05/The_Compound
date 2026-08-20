@@ -25,6 +25,7 @@
 - **Project Desk Editor**: The Workstation's editable text and code surface. On an explicit save, it writes the Member's file directly to that Member's Registered Project Root through the appropriate Execution Host; it cannot write outside that root.
 - **Explicit Save**: A deliberate save action, including the normal keyboard shortcut, that writes a Project Desk Editor buffer to its source file. Unsaved content has a visible dirty state and recoverable local buffer; it never auto-writes source files.
 - **Live Source Collaboration**: A Google-Docs-style shared source-file surface where both Members edit one merged buffer in real time and see each other's labelled caret and selection. It has no writer lock; source persistence follows the current Explicit Save policy.
+- **Shared Save State**: The common saved-or-dirty state of a live shared source-file buffer. Real-time edits update the merged buffer immediately but do not alter the underlying source file until an Explicit Save occurs.
 - **Stage**: A shared viewing surface where a Member intentionally presents a file, page, or live demo to the other Member.
 - **Computer Session**: A deliberately opened full-machine-control session targeting an approved Execution Host. It is separate from the ordinary Workstation and from the Lobby.
 
