@@ -41,8 +41,9 @@
 - **Project Home Host**: The one named Execution Host for a project. It holds that project's Registered Project Root, receives its source-file saves, and runs that project's native apps, terminals, and local models.
 - **Project Owner**: The Member whose Execution Host is a project's Project Home Host. The Project Owner may invite the other Member to share that project.
 - **Project Share Invitation**: An explicit request from a Project Owner to the other Member to share one named project. It states the Project Home Host and must be accepted before the project becomes shared.
-- **Collaborator Access**: The default access granted after a Project Share Invitation is accepted. It lets both Members browse only that Registered Project Root and participate in Live Source Collaboration, but grants no terminal, browser, local-model, or full-machine control.
-- **Shared Project**: A Registered Project Root that both Members may open, browse, and edit through Collaborator Access after the recipient accepts a Project Share Invitation. It retains one Project Home Host.
+- **Collaborator Access**: The default access granted after a Project Share Invitation is accepted. It lets both Members browse only that Registered Project Root and participate in Live Source Collaboration, but grants no terminal, browser, local-model, or full-machine control. It lasts until a Project Access End.
+- **Project Access End**: An immediate end of Collaborator Access, triggered when the Project Owner revokes access or the collaborator leaves. It removes the collaborator's project capability without deleting source files, Revision Snapshots, or the Project Home Host's project.
+- **Shared Project**: A Registered Project Root that both Members may open, browse, and edit through active Collaborator Access after the recipient accepts a Project Share Invitation. It retains one Project Home Host.
 - **Personal Project**: A Registered Project Root visible only to its Project Owner by default. It becomes a Shared Project only through an accepted Project Share Invitation.
 - **Preview**: A rendered file or running local web application shown inside a Workstation or on the Stage.
 - **Attachment**: A file deliberately added to a conversation, project, or Stage. An attachment is not an implicit grant to browse its containing folder.
