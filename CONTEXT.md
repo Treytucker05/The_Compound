@@ -10,6 +10,7 @@
 - **Drag to Project**: An explicit gesture from a Connector-provided live app card or thumbnail onto a Canvas Board or Projector Window. It creates a Projected App Session without moving the program or running it on the Compound Hub.
 - **Lobby**: The shared social room for presence, text chat, push-to-talk radio, and optional shared Game Tables. It is not a filesystem browser or an administrative console.
 - **2D Clubhouse**: The Lobby's visual form: an interactive two-dimensional shared room with clearly labelled Member-presence anchors and Game Tables. It is neither a generic panel dashboard nor a full three-dimensional world.
+- **Clubhouse Character**: A small, named, customizable two-dimensional arcade character representing a Member's presence in the 2D Clubhouse. It is a social presence cue, not a required navigation mechanism.
 - **Retro Arcade Direction**: The visual mood for the 2D Clubhouse: deliberate arcade-era cues, playful social energy, and memorable game objects while preserving legible, modern work and status surfaces.
 - **Game Table**: A lightweight, native shared game in the Lobby that Members intentionally open and play together. It is not a Projector Window, a remote application stream, or an access path to a Member's files or computer.
 - **Game Table Roadmap**: Basketball Shootout is the first Lobby game. Air hockey, pool, and soccer follow after Basketball is validated and do not block the initial Lobby release.
