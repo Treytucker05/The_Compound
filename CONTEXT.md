@@ -29,6 +29,8 @@
 - **Shared Save**: An Explicit Save of a live shared source-file buffer that either Member may invoke. It records which Member saved and when.
 - **Revision Snapshot**: A retained file-level version created for every Shared Save. It is selected for Revision Compare and never directly changes the live shared buffer or source file.
 - **Revision Compare**: A side-by-side, line-level comparison of a Revision Snapshot and the current live shared file. It never changes the buffer or source file; Members manually copy the desired changes before an Explicit Save.
+- **Diff Summary**: A human-readable count of lines and sections added, removed, and changed between a Revision Snapshot and the current file.
+- **Revision Fingerprint**: A SHA-256 fingerprint of the exact saved file bytes in a Revision Snapshot, used to identify and verify that version's contents.
 - **Stage**: A shared viewing surface where a Member intentionally presents a file, page, or live demo to the other Member.
 - **Computer Session**: A deliberately opened full-machine-control session targeting an approved Execution Host. It is separate from the ordinary Workstation and from the Lobby.
 
