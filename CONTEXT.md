@@ -39,6 +39,7 @@
 
 - **Registered Project Root**: A folder deliberately enrolled as a project on its Project Home Host. The ordinary Workstation Files view contains only Registered Project Roots; it does not enumerate the entire host filesystem.
 - **Project Home Host**: The one named Execution Host for a project. It holds that project's Registered Project Root, receives its source-file saves, and runs that project's native apps, terminals, and local models.
+- **Project Home Host Offline State**: The clear unavailable state shown when the Project Home Host Connector cannot be reached. It exposes no cached project file contents and permits no project browsing, editing, source save, or delayed-sync work.
 - **Project Owner**: The Member whose Execution Host is a project's Project Home Host. The Project Owner may invite the other Member to share that project.
 - **Project Share Invitation**: An explicit request from a Project Owner to the other Member to share one named project. It states the Project Home Host and must be accepted before the project becomes shared.
 - **Collaborator Access**: The default access granted after a Project Share Invitation is accepted. It lets both Members browse only that Registered Project Root and participate in Live Source Collaboration, but grants no terminal, browser, local-model, or full-machine control. It lasts until a Project Access End.
