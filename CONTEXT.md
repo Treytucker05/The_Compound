@@ -20,6 +20,7 @@
 - **Basketball Game Mode**: A selectable rule set for Basketball Shootout. Version 1 includes HORSE, Timed Shootout, and Cooperative Target modes.
 - **HORSE Mode**: The default Basketball Shootout mode. One Member selects a shot position on the shared court and takes a shot; after a made shot, the other Member must try the matching marked position under standard HORSE rules.
 - **Workstation**: A Member's persistent work surface in The Compound. It presents that Member's registered projects, AI conversation, terminal, attachments, previews, and share controls through approved Execution Hosts.
+- **Project Desk**: The default Workstation layout: a Registered Project Root and files panel on the left, the selected real terminal, browser, or LLM tool surface in the center, and Preview and sharing controls alongside it. It does not create a separate prompt-only AI interface.
 - **Stage**: A shared viewing surface where a Member intentionally presents a file, page, or live demo to the other Member.
 - **Computer Session**: A deliberately opened full-machine-control session targeting an approved Execution Host. It is separate from the ordinary Workstation and from the Lobby.
 
